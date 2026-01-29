@@ -1,0 +1,18 @@
+{
+  "azure": {
+    "tenantId": "your-tenant-id"
+  },
+  "asr": {
+    "resourceGroup": "drill-rg",
+    "vaultName": "drill-rsv",
+    "fabricName": "primary-fabric",
+    "containerName": "vm-container",
+    "protectedItemPrefix": "pc"
+  },
+  "email": {
+    "smtpServer": "smtp.example.com",
+    "port": 587,
+    "from": "drill@example.com",
+    "to": ["admin1@example.com", "admin2@example.com"]
+  }
+}
