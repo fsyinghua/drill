@@ -1,19 +1,19 @@
-# 检查现有会话并显示缓存时间
+# Check existing session and show cache time
 $existingContext = Get-AzContext -ErrorAction SilentlyContinue
 if ($existingContext) {
     try {
         $token = Get-AzAccessToken
         $expiresAt = $token.ExpiresOn
         $remaining = $expiresAt - (Get-Date)
-        Write-Host "✅ 已使用缓存上下文: $($existingContext.Account) ($($existingContext.Subscription))" -ForegroundColor Green
-        Write-Host "🔐 缓存有效期至: $($expiresAt.ToString('yyyy-MM-dd HH:mm')) ($([math]::Max(0, $remaining.TotalMinutes)))分钟" -ForegroundColor Cyan
+        Write-Host "[OK] Using cached context: $($existingContext.Account) ($($existingContext.Subscription))" -ForegroundColor Green
+        Write-Host "[TOKEN] Cache valid until: $($expiresAt.ToString('yyyy-MM-dd HH:mm')) ($([math]::Max(0, $remaining.TotalMinutes))) minutes" -ForegroundColor Cyan
     } catch {
-        Write-Host "⚠️  无法获取Token详情（模块版本可能过旧）" -ForegroundColor Yellow
+        Write-Host "[WARN]  Token details unavailable (module version may be outdated)" -ForegroundColor Yellow
     }
     exit 0
 }
 
-# 多任务并发锁机制
+# Multi-task concurrency lock
 $maxRetries = 5
 $retryDelay = 2
 $lockFile = ".az-login-lock"
@@ -23,7 +23,7 @@ for ($i = 1; $i -le $maxRetries; $i++) {
     if (-not (Test-Path $lockFile)) {
         New-Item $lockFile -Force | Out-Null
         try {
-            Write-Host "ℹ️  正在启动设备认证（请访问 https://microsoft.com/devicelogin）" -ForegroundColor Cyan
+            Write-Host "ℹ️  Starting device authentication (visit https://microsoft.com/devicelogin)" -ForegroundColor Cyan
             $config = Get-Content vm-config.ini | ConvertFrom-StringData
             Connect-AzAccount -UseDeviceAuthentication -Subscription $config.subscriptionId
             $loginSuccess = $true
@@ -32,21 +32,21 @@ for ($i = 1; $i -le $maxRetries; $i++) {
         }
         break
     } else {
-        Write-Host "⏳ 检测到其他任务正在登录，等待 $($retryDelay * $i) 秒后重试..." -ForegroundColor Yellow
+        Write-Host "⏳ Another task is logging in. Waiting $($retryDelay * $i) seconds..." -ForegroundColor Yellow
         Start-Sleep -Seconds ($retryDelay * $i)
     }
 }
 
 if (-not $loginSuccess) {
-    throw "❌ 无法获取Azure会话（重试超时）"
+    throw "❌ Failed to acquire Azure session (timed out)"
 }
 
-# 显示新登录的缓存时间
+# Show new login cache time
 try {
     $token = Get-AzAccessToken
     $expiresAt = $token.ExpiresOn
     $remaining = $expiresAt - (Get-Date)
-    Write-Host "🔐 设备认证成功！缓存有效期至: $($expiresAt.ToString('yyyy-MM-dd HH:mm')) ($([math]::Max(0, $remaining.TotalMinutes)))分钟" -ForegroundColor Green
+    Write-Host "[TOKEN] Device authentication successful! Cache valid until: $($expiresAt.ToString('yyyy-MM-dd HH:mm')) ($([math]::Max(0, $remaining.TotalMinutes))) minutes" -ForegroundColor Green
 } catch {
-    Write-Host "⚠️  无法获取Token详情（模块版本可能过旧）" -ForegroundColor Yellow
+    Write-Host "[WARN]  Token details unavailable (module version may be outdated)" -ForegroundColor Yellow
 }
