@@ -263,7 +263,7 @@ switch ($step) {
             Start-Sleep -Milliseconds 500
         } else {
             Write-Log "[INFO] Getting protection container mapping..."
-            $pcm = Get-AzRecoveryServicesAsrProtectionContainerMapping -Vault $vault | Where-Object { $_.Name -match $vmConfig.protectionContainerMapping } | Select-Object -First 1
+            $pcm = Get-AzRecoveryServicesAsrProtectionContainerMapping -ProtectionContainer $container | Where-Object { $_.Name -match $vmConfig.protectionContainerMapping } | Select-Object -First 1
 
             if (-not $pcm) {
                 Write-Log "[WARNING] Protection container mapping not found. Using default parameters."
@@ -320,7 +320,7 @@ switch ($step) {
             Start-Sleep -Milliseconds 500
         } else {
             Write-Log "[INFO] Getting protection container mapping..."
-            $pcm = Get-AzRecoveryServicesAsrProtectionContainerMapping -Vault $vault | Where-Object { $_.Name -match $vmConfig.protectionContainerMapping } | Select-Object -First 1
+            $pcm = Get-AzRecoveryServicesAsrProtectionContainerMapping -ProtectionContainer $container | Where-Object { $_.Name -match $vmConfig.protectionContainerMapping } | Select-Object -First 1
 
             if (-not $pcm) {
                 Write-Log "[WARNING] Protection container mapping not found. Using default parameters."
@@ -533,7 +533,7 @@ foreach ($targetVm in $vmList) {
                 Write-Host "[WHATIF] : Update-AzRecoveryServicesAsrProtectionDirection -AzureToAzure" -ForegroundColor Yellow
             } else {
                 Write-Host "[INFO] : Getting protection container mapping..." -ForegroundColor Cyan
-                $pcm = Get-AzRecoveryServicesAsrProtectionContainerMapping -Vault $vault | Where-Object { $_.Name -match $vmConfig.protectionContainerMapping } | Select-Object -First 1
+                $pcm = Get-AzRecoveryServicesAsrProtectionContainerMapping -ProtectionContainer $container | Where-Object { $_.Name -match $vmConfig.protectionContainerMapping } | Select-Object -First 1
 
                 if (-not $pcm) {
                     Write-Warning "Protection container mapping not found. Using default parameters."
@@ -589,7 +589,7 @@ foreach ($targetVm in $vmList) {
                 Write-Host "[WHATIF] : Update-AzRecoveryServicesAsrProtectionDirection -AzureToAzure" -ForegroundColor Yellow
             } else {
                 Write-Host "[INFO] : Getting protection container mapping..." -ForegroundColor Cyan
-                $pcm = Get-AzRecoveryServicesAsrProtectionContainerMapping -Vault $vault | Where-Object { $_.Name -match $vmConfig.protectionContainerMapping } | Select-Object -First 1
+                $pcm = Get-AzRecoveryServicesAsrProtectionContainerMapping -ProtectionContainer $container | Where-Object { $_.Name -match $vmConfig.protectionContainerMapping } | Select-Object -First 1
 
                 if (-not $pcm) {
                     Write-Warning "Protection container mapping not found. Using default parameters."
