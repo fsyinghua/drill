@@ -27,18 +27,35 @@
 
 | 项目 | 值 |
 |:----|:----|
-| 当前版本 | **v1.1.7** |
+| 当前版本 | **v1.1.8** |
 | 发布日期 | 2026-01-31 |
 | 状态 | 🔄 开发中 |
-| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.7 |
+| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.8 |
 
 ---
 
 ## 3. 版本历史
 
-### v1.1.7 (2026-01-31) - Bug修复（添加-AzureToAzure参数）
+### v1.1.8 (2026-01-31) - Bug修复（使用正确的Reprotect命令）
 
 **状态**: 🔄 开发中
+
+**问题修复**:
+- `Update-AzRecoveryServicesAsrProtectionDirection` 存在参数集冲突问题
+- 使用 `Start-AzRecoveryServicesAsrResynchronizeReplicationJob` 作为替代命令
+- 该命令存在于 Az.RecoveryServices 7.11.0，参数简单可靠
+
+**变更说明**:
+- 所有 4 处 reprotect 调用改用 `Start-AzRecoveryServicesAsrResynchronizeReplicationJob`
+- 命令格式：`-ReplicationProtectedItem $protectedItem`
+- 移除了复杂的 `-AzureToAzure` 和 `-ProtectionContainerMapping` 参数
+
+**包含文件变更**:
+- `drill.ps1` - 使用 Start-AzRecoveryServicesAsrResynchronizeReplicationJob
+
+### v1.1.7 (2026-01-31) - Bug修复（添加-AzureToAzure参数）
+
+**状态**: ✅ 已发布
 
 **问题修复**:
 - `AzureToAzure` 参数集**必须**使用 `-AzureToAzure` 开关参数
