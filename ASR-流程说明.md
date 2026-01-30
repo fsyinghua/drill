@@ -15,9 +15,13 @@
 .\drill.ps1 -vmName CA01SSEGHK -step 1
 .\drill.ps1 -vmName CA01SSEGHK -step 1 -WhatIf
 
-# Batch execution
+# Batch execution (sequential)
 .\drill.ps1 -InputFile vms.txt -step 1
 .\drill.ps1 -InputFile vms.txt -step 1 -WhatIf
+
+# Batch execution (parallel - recommended for 10+ VMs)
+.\drill.ps1 -InputFile vms.txt -step 1 -Parallel
+.\drill.ps1 -InputFile vms.txt -step 1 -Parallel -WhatIf
 ```
 
 ## See Also

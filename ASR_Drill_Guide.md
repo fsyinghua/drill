@@ -66,11 +66,35 @@ Execute batch:
 # Simulation mode (preview)
 .\drill.ps1 -InputFile vms.txt -step 1 -WhatIf
 
-# Real execution
+# Real execution (sequential)
 .\drill.ps1 -InputFile vms.txt -step 1
+
+# Real execution (parallel - recommended for 10+ VMs)
+.\drill.ps1 -InputFile vms.txt -step 1 -Parallel
 ```
 
-### 3.3 Mode Comparison
+### 3.3 Parallel Execution Mode
+
+For batch operations with multiple VMs, use `-Parallel` flag to run VMs concurrently:
+
+```powershell
+# Parallel execution (all VMs run at the same time)
+.\drill.ps1 -InputFile vms.txt -step 1 -Parallel
+
+# Parallel with simulation
+.\drill.ps1 -InputFile vms.txt -step 1 -Parallel -WhatIf
+```
+
+**Benefits of Parallel Mode:**
+- All VMs execute simultaneously (using Start-Job)
+- Each VM runs in isolated process
+- Independent Azure context per VM
+- Real-time status monitoring
+- Separate log files for each VM
+
+**Note:** Parallel mode is recommended when processing 10+ VMs.
+
+### 3.4 Mode Comparison
 | Operation | Real Execution | Simulation (-WhatIf) |
 |-----------|----------------|----------------------|
 | VM Shutdown | Yes | Preview only |
@@ -130,11 +154,26 @@ Get-AzRecoveryServicesAsrJob | Where-Object Operation -eq 'Failover'
 # 1. Create VM list file
 "CA01SSEGHK", "DMS15SSEGHK", "DMS16SSEGHK" | Out-File -Encoding utf8 vms.txt
 
-# 2. Preview all VMs
+# 2. Preview all VMs (sequential)
 .\drill.ps1 -InputFile vms.txt -step 1 -WhatIf
 
-# 3. Execute for all VMs
+# 3. Execute for all VMs (sequential)
 .\drill.ps1 -InputFile vms.txt -step 1
+
+# 4. Execute for all VMs (parallel - recommended)
+.\drill.ps1 -InputFile vms.txt -step 1 -Parallel
+```
+
+## 8. Parallel Execution
+```powershell
+# Run all VMs in parallel (recommended for 10+ VMs)
+.\drill.ps1 -InputFile vms.txt -step 1 -Parallel
+
+# Parallel execution provides:
+# - Simultaneous execution of all VMs
+# - Real-time status monitoring
+# - Separate log files for each VM
+# - One failed VM does not stop others
 ```
 
 ## 8. Troubleshooting

@@ -165,8 +165,11 @@ Describe 'Azure Login' {
 # Simulation mode
 .\drill.ps1 -InputFile vms.txt -step 1 -WhatIf
 
-# Real execution
+# Real execution (sequential)
 .\drill.ps1 -InputFile vms.txt -step 1
+
+# Real execution (parallel - recommended for 10+ VMs)
+.\drill.ps1 -InputFile vms.txt -step 1 -Parallel
 ```
 
 ### Parameter Reference
@@ -176,3 +179,4 @@ Describe 'Azure Login' {
 | `-InputFile` | Path to text file with VM names (one per line) |
 | `-step` | Drill step (1-6) |
 | `-WhatIf` | Preview mode without execution |
+| `-Parallel` | Run multiple VMs in parallel (batch mode only) |
