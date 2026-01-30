@@ -27,18 +27,36 @@
 
 | 项目 | 值 |
 |:----|:----|
-| 当前版本 | **v1.1.5** |
+| 当前版本 | **v1.1.6** |
 | 发布日期 | 2026-01-31 |
 | 状态 | 🔄 开发中 |
-| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.5 |
+| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.6 |
 
 ---
 
 ## 3. 版本历史
 
-### v1.1.5 (2026-01-31) - Bug修复（参数集冲突）
+### v1.1.6 (2026-01-31) - Bug修复（简化Reprotect命令参数）
 
 **状态**: 🔄 开发中
+
+**问题修复**:
+- 移除了 `-Direction RecoveryToPrimary` 参数
+- 使用简单的 ByRPIObject 参数集：`-ReplicationProtectedItem $protectedItem`
+- 确认 `Start-AzRecoveryServicesAsrReprotectJob` 命令不存在于 Az.RecoveryServices 7.11.0
+- 使用 `Update-AzRecoveryServicesAsrProtectionDirection` 作为替代命令
+
+**变更说明**:
+- 未找到 ProtectionContainerMapping 时：`-ReplicationProtectedItem $protectedItem`
+- 找到 ProtectionContainerMapping 时：`-ProtectionContainerMapping $pcm -ReplicationProtectedItem $protectedItem`
+- 修复 4 处：串行 Step 3/6，并行 Step 3/6
+
+**包含文件变更**:
+- `drill.ps1` - 简化 reprotect 命令参数
+
+### v1.1.5 (2026-01-31) - Bug修复（参数集冲突）
+
+**状态**: ✅ 已发布
 
 **问题修复**:
 - 修复 `-Direction` 和 `-ProtectionContainerMapping` 参数集冲突问题
