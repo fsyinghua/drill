@@ -41,13 +41,19 @@
 **状态**: 🔄 开发中
 
 **问题修复**:
-- `Update-AzRecoveryServicesAsrProtectionDirection` 存在参数集冲突问题
-- 使用 `Start-AzRecoveryServicesAsrResynchronizeReplicationJob` 作为替代命令
-- 该命令存在于 Az.RecoveryServices 7.11.0，参数简单可靠
+- 远程机器上确认 `Update-AzRecoveryServicesAsrProtectionDirection` 存在但参数集冲突
+- 通过 `Get-Command` 分析确认正确的参数集用法：
+  - **简单参数集**（无 PCM）：`-ReplicationProtectedItem $protectedItem -Direction RecoveryToPrimary`
+  - **AzureToAzure 参数集**（有 PCM）：`-AzureToAzure -ProtectionContainerMapping $pcm -LogStorageAccountId $logId -ReplicationProtectedItem $protectedItem`
 
 **变更说明**:
-- 所有 4 处 reprotect 调用改用 `Start-AzRecoveryServicesAsrResynchronizeReplicationJob`
-- 命令格式：`-ReplicationProtectedItem $protectedItem`
+- 所有 4 处 reprotect 调用改用 `Update-AzRecoveryServicesAsrProtectionDirection`
+- 根据是否找到 ProtectionContainerMapping 自动选择参数集
+- 更新执行计划显示，描述正确的参数集选项
+
+**包含文件变更**:
+- `drill.ps1` - 更新 Step 3/6 的 reprotect 命令（serial 和 parallel 模式）
+- `RELEASE.md` - 更新版本说明
 - 移除了复杂的 `-AzureToAzure` 和 `-ProtectionContainerMapping` 参数
 
 **包含文件变更**:
