@@ -27,18 +27,34 @@
 
 | 项目 | 值 |
 |:----|:----|
-| 当前版本 | **v1.1.6** |
+| 当前版本 | **v1.1.7** |
 | 发布日期 | 2026-01-31 |
 | 状态 | 🔄 开发中 |
-| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.6 |
+| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.7 |
 
 ---
 
 ## 3. 版本历史
 
-### v1.1.6 (2026-01-31) - Bug修复（简化Reprotect命令参数）
+### v1.1.7 (2026-01-31) - Bug修复（添加-AzureToAzure参数）
 
 **状态**: 🔄 开发中
+
+**问题修复**:
+- `AzureToAzure` 参数集**必须**使用 `-AzureToAzure` 开关参数
+- 没有 `-AzureToAzure` 参数时，无法使用 `-ProtectionContainerMapping`
+- 添加 `-AzureToAzure` 参数到所有 4 处 reprotect 调用
+
+**变更说明**:
+- 未找到 PCM 时：`-AzureToAzure -ReplicationProtectedItem $protectedItem`
+- 找到 PCM 时：`-AzureToAzure -ProtectionContainerMapping $pcm -ReplicationProtectedItem $protectedItem`
+
+**包含文件变更**:
+- `drill.ps1` - 添加 `-AzureToAzure` 参数
+
+### v1.1.6 (2026-01-31) - Bug修复（简化Reprotect命令参数）
+
+**状态**: ✅ 已发布
 
 **问题修复**:
 - 移除了 `-Direction RecoveryToPrimary` 参数
