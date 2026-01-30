@@ -95,10 +95,10 @@ Write-Log "[VM] Processing: `$targetVm"
 switch (`$step) {
     1 {
         if (`$WhatIf) {
-            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideAction"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer
+            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideAction
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failover completed"
@@ -128,10 +128,10 @@ switch (`$step) {
     }
     4 {
         if (`$WhatIf) {
-            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideAction"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer
+            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideAction
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failback completed"
@@ -181,10 +181,10 @@ Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
         $scriptContent | Out-File -FilePath $tempScript -Encoding UTF8
 
         $stepCmd = @("",
-            "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer",
+            "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideAction",
             "Start-AzRecoveryServicesAsrCommitFailoverJob",
             "Start-AzRecoveryServicesAsrReprotectJob",
-            "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer",
+            "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideAction",
             "Start-AzRecoveryServicesAsrCommitFailoverJob",
             "Start-AzRecoveryServicesAsrReprotectJob")[$step]
 
@@ -314,12 +314,11 @@ foreach ($targetVm in $vmList) {
     switch ($step) {
         1 {
             if ($WhatIf) {
-                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer" -ForegroundColor Yellow
+                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideAction" -ForegroundColor Yellow
             } else {
                 $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem $protectedItem `
                     -Direction PrimaryToRecovery `
-                    -PerformSourceSideActions `
-                    -ShutDownSourceServer
+                    -PerformSourceSideAction
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery" -ForegroundColor Cyan
                 $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Failover completed" -ForegroundColor Green
@@ -347,12 +346,11 @@ foreach ($targetVm in $vmList) {
         }
         4 {
             if ($WhatIf) {
-                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer" -ForegroundColor Yellow
+                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideAction" -ForegroundColor Yellow
             } else {
                 $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem $protectedItem `
                     -Direction RecoveryToPrimary `
-                    -PerformSourceSideActions `
-                    -ShutDownSourceServer
+                    -PerformSourceSideAction
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary" -ForegroundColor Cyan
                 $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Failback completed" -ForegroundColor Green
