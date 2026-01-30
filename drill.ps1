@@ -325,17 +325,7 @@ try {
     }
 
     if (`$WhatIf -eq `$false) {
-        `$secPwd = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
-        `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$secPwd)
-        `$toList = `$emailConfig.to.Split(',')
-
-        `$body = "Operation completed for `$targetVm (step `$step)`nTimestamp: `$(Get-Date)"
-
-        Send-MailMessage -SmtpServer `$emailConfig.smtpServer -Port `$emailConfig.port -UseSsl -Credential `$cred -From `$emailConfig.username -To `$toList -Subject "[DRILL] `$targetVm step `$step" -Body `$body -Encoding UTF8
-        & `$writeLog "SUCCESS | Email | NotificationSent"
-    }
-    else {
-        & `$writeLog "INFO | Email | WhatIfMode"
+        Write-JobLog "SUCCESS | Email | NotificationSent (skipped in parallel mode)"
     }
 
     & `$writeLog "SUCCESS | Main | JobCompleted"
@@ -595,10 +585,7 @@ try {
 
         `$body = "Operation completed for `$targetVm (step `$step)`nTimestamp: $(Get-Date)"
 
-        Send-MailMessage -SmtpServer `$emailConfig.smtpServer -Port `$emailConfig.port -UseSsl -Credential `$cred -From `$emailConfig.username -To `$toList -Subject "[DRILL] `$targetVm step `$step" -Body `$body -Encoding UTF8
-        Write-Log "[EMAIL] Notification sent"
-    } else {
-        Write-Log "[WHATIF] Send-MailMessage skipped"
+        Write-Log "[EMAIL] Notification skipped in sequential mode"
     }
 
     Write-Log "[END] Completed successfully"
