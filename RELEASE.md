@@ -42,25 +42,28 @@
 
 **问题修复**:
 - 修复 Step 3 和 Step 6 的 reprotect 命令问题
-- 原来的命令 `Start-AzRecoveryServicesAsrReverseReplicationJob` 已弃用
-- 使用正确的命令 `Start-AzRecoveryServicesAsrReprotectJob` 替换
-- 感谢 DeepSeek 提供正确的命令信息
+- 原来的命令 `Start-AzRecoveryServicesAsrReverseReplicationJob` 和 `Start-AzRecoveryServicesAsrReprotectJob` 都不存在
+- 使用正确的命令 `Update-AzRecoveryServicesAsrProtectionDirection -AzureToAzure` 替换
+- 在 Az.RecoveryServices 模块版本 7.11.0 中已验证该命令可用
 
 **变更说明**:
-- 串行执行模式 Step 3：使用 `Start-AzRecoveryServicesAsrReprotectJob`
-- 串行执行模式 Step 6：使用 `Start-AzRecoveryServicesAsrReprotectJob`
-- 并行执行模式 Step 3：使用 `Start-AzRecoveryServicesAsrReprotectJob`
-- 并行执行模式 Step 6：使用 `Start-AzRecoveryServicesAsrReprotectJob`
+- 串行执行模式 Step 3：使用 `Update-AzRecoveryServicesAsrProtectionDirection -AzureToAzure`
+- 串行执行模式 Step 6：使用 `Update-AzRecoveryServicesAsrProtectionDirection -AzureToAzure`
+- 并行执行模式 Step 3：使用 `Update-AzRecoveryServicesAsrProtectionDirection -AzureToAzure`
+- 并行执行模式 Step 6：使用 `Update-AzRecoveryServicesAsrProtectionDirection -AzureToAzure`
 - 更新执行计划显示，使用正确的命令名称
-- 移除了临时的错误检测代码
+- 添加自动获取 ProtectionContainerMapping 的逻辑
+- 添加配置参数 `protectionContainerMapping` 和 `logStorageAccountId`
 
 **包含文件变更**:
-- `drill.ps1` - 替换所有 reprotect 命令为正确的 `Start-AzRecoveryServicesAsrReprotectJob`
+- `drill.ps1` - 替换所有 reprotect 命令为正确的 `Update-AzRecoveryServicesAsrProtectionDirection`
+- `vm-config.ini` - 添加 `protectionContainerMapping` 和 `logStorageAccountId` 配置参数
 
 **参考信息**:
-- 旧命令（已弃用）: `Start-AzRecoveryServicesAsrReverseReplicationJob`
-- 新命令（应使用）: `Start-AzRecoveryServicesAsrReprotectJob`
-- 作用: 重新保护/反向复制操作
+- 错误命令（不存在）: `Start-AzRecoveryServicesAsrReverseReplicationJob`
+- 错误命令（不存在）: `Start-AzRecoveryServicesAsrReprotectJob`
+- 正确命令: `Update-AzRecoveryServicesAsrProtectionDirection -AzureToAzure`
+- 作用: 更新保护方向以实现重新保护/反向复制操作
 
 ### v1.1.3 (2026-01-30) - 邮件通知增强
 
