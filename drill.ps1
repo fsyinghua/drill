@@ -12,6 +12,18 @@ function Read-Ini {
     (Get-Content $args[0]) -replace ' ', '' -join "`n" | ConvertFrom-StringData
 }
 
+function Wait-AsrJob {
+    param([object]$Job)
+    while ($Job.State -eq "InProgress" -or $Job.State -eq "NotStarted") {
+        Start-Sleep -Seconds 10
+        $Job = Get-AzRecoveryServicesAsrJob -Job $Job
+    }
+    if ($Job.State -ne "Completed") {
+        throw "ASR Job failed: $($Job.State) - $($Job.ErrorDescription)"
+    }
+    return $Job
+}
+
 $vmConfig = Read-Ini vm-config.ini
 $emailConfig = Read-Ini email-config.ini
 
@@ -100,7 +112,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideAction
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
-            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$job | Wait-AsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failover completed"
         }
     }
@@ -111,7 +123,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
-            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$job | Wait-AsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Commit completed"
         }
     }
@@ -122,7 +134,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
-            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$job | Wait-AsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Reprotect completed"
         }
     }
@@ -133,7 +145,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideAction
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
-            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$job | Wait-AsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failback completed"
         }
     }
@@ -144,7 +156,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
-            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$job | Wait-AsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Commit failback completed"
         }
     }
@@ -155,7 +167,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
-            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$job | Wait-AsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Reprotect restore completed"
         }
     }
@@ -320,7 +332,7 @@ foreach ($targetVm in $vmList) {
                     -Direction PrimaryToRecovery `
                     -PerformSourceSideAction
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery" -ForegroundColor Cyan
-                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                $job | Wait-AsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Failover completed" -ForegroundColor Green
             }
         }
@@ -330,7 +342,7 @@ foreach ($targetVm in $vmList) {
             } else {
                 $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem $protectedItem
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Cyan
-                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                $job | Wait-AsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Commit completed" -ForegroundColor Green
             }
         }
@@ -340,7 +352,7 @@ foreach ($targetVm in $vmList) {
             } else {
                 $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
-                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                $job | Wait-AsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Reprotect completed" -ForegroundColor Green
             }
         }
@@ -352,7 +364,7 @@ foreach ($targetVm in $vmList) {
                     -Direction RecoveryToPrimary `
                     -PerformSourceSideAction
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary" -ForegroundColor Cyan
-                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                $job | Wait-AsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Failback completed" -ForegroundColor Green
             }
         }
@@ -362,7 +374,7 @@ foreach ($targetVm in $vmList) {
             } else {
                 $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem $protectedItem
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Cyan
-                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                $job | Wait-AsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Commit failback completed" -ForegroundColor Green
             }
         }
@@ -372,7 +384,7 @@ foreach ($targetVm in $vmList) {
             } else {
                 $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
-                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                $job | Wait-AsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Reprotect restore completed" -ForegroundColor Green
             }
         }
