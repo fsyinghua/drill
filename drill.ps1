@@ -236,7 +236,7 @@ function Write-JobLog {
 
 function Invoke-JobRetry {
     param(
-        [scriptblock]`$ScriptBlock,
+        `$ScriptBlock,
         [int]`$MaxRetries,
         [int]`$RetryDelay,
         [string]`$OperationName
