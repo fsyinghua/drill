@@ -13,31 +13,30 @@ $emailConfig = Read-Ini email-config.ini
 
 Import-Module Az.RecoveryServices
 
-# 邮箱配置
-Write-Host "[] : $($vmConfig.subscriptionId)" -ForegroundColor Cyan
+Write-Host "[CFG] : Subscription $($vmConfig.subscriptionId)" -ForegroundColor Cyan
 Select-AzSubscription -SubscriptionId $vmConfig.subscriptionId -ErrorAction Stop
 
-Write-Host "[] : $($vmConfig.vaultName)" -ForegroundColor Cyan
+Write-Host "[ASR] : $($vmConfig.vaultName)" -ForegroundColor Cyan
 $vault = Get-AzRecoveryServicesVault -Name $vmConfig.vaultName -ResourceGroupName $vmConfig.resourceGroup -ErrorAction Stop
 
-Write-Host "[] ASR" -ForegroundColor Cyan
-Set-AzRecoveryServicesAsrVaultContext -Name $vmConfig.vaultName -ErrorAction Stop
+$vaultSettingsFile = Get-AzRecoveryServicesVaultSettingsFile -Vault $vault -ErrorAction Stop
+Import-AzRecoveryServicesAsrVaultSettingsFile -Path $vaultSettingsFile.FilePath -ErrorAction Stop
 
-# 获取容器
+# Get protection container
 $container = Get-AzRecoveryServicesAsrFabric -Name $vmConfig.fabricName | 
     Get-AzRecoveryServicesAsrProtectionContainer -Name $vmConfig.containerName
 
-# 
+# Find protected item
 $protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer $container |
     Where-Object { $_.FriendlyName -eq $vmName }
 
 
 if (-not $protectedItem) {
-    Write-Error "未找到虚拟机: $vmName"
+    Write-Error "VM not found: $vmName"
     exit 1
 }
 
-# 
+# Execute failover step
 switch ($step) {
     1 { 
         if ($WhatIf) {
@@ -89,7 +88,7 @@ switch ($step) {
     }
 }
 
-# 
+# Send email notification
 $securePassword = ConvertTo-SecureString $emailConfig.password -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PSCredential(
     $emailConfig.username,
