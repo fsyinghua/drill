@@ -93,8 +93,8 @@ $cred = New-Object System.Management.Automation.PSCredential(
 
 $toList = $emailConfig.to.Split(',')
 
-# Determine testToTest = @ steps
-$steps()
+# Determine test steps
+$stepsToTest = @()
 if ($step -eq "All") {
     $stepsToTest = 1,2,3,4,5,6
 } else {
