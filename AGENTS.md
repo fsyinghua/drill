@@ -173,10 +173,58 @@ Describe 'Azure Login' {
 ```
 
 ### Parameter Reference
-| Parameter | Description |
-|-----------|-------------|
-| `-vmName` | Single VM name to process |
-| `-InputFile` | Path to text file with VM names (one per line) |
-| `-step` | Drill step (1-6) |
-| `-WhatIf` | Preview mode without execution |
-| `-Parallel` | Run multiple VMs in parallel (batch mode only) |
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `-vmName` | Single VM name to process | - |
+| `-InputFile` | Path to text file with VM names (one per line) | - |
+| `-step` | Drill step (1-6) | - |
+| `-WhatIf` | Preview mode without execution | - |
+| `-Parallel` | Run multiple VMs in parallel (batch mode only) | - |
+| `-MaxRetries` | Maximum retry attempts for transient failures | 3 |
+| `-RetryDelay` | Delay in seconds between retries | 5 |
+| `-Timeout` | Global timeout in seconds (0 = unlimited) | 0 |
+
+### Logging System
+
+The drill script uses a unified logging system with the following format:
+
+```
+yyyy-MM-dd HH:mm:ss.fff | [VMName] Module | Action | Command | Status | Error
+```
+
+#### Log Fields
+| Field | Description | Example |
+|-------|-------------|---------|
+| Timestamp | ISO 8601 format with milliseconds | 2026-01-30 10:30:45.123 |
+| VMName | Target VM name (for batch/parallel) | CA01SSEGHK |
+| Module | Functional module | Azure, ASR, Email, Main |
+| Action | Specific action performed | SelectSubscription, Failover |
+| Command | PowerShell command executed | Start-AzRecoveryServicesAsr... |
+| Status | Result status | SUCCESS, FAILED, RETRY, WHATIF, INFO |
+| Error | Detailed error message (on failure) | Exception details |
+
+#### Log File Location
+- Logs are stored in the `logs/` directory
+- File naming: `drill-{step}-{timestamp}.log`
+- Summary file: `{logfile}.summary.txt`
+
+#### Example Log Output
+```
+2026-01-30 10:30:45.123 |  Main | StartDrill | step=1, parallel=True | SUCCESS
+2026-01-30 10:30:45.125 | [CA01SSEGHK] Azure | SelectSubscription | subscriptionId=xxx | SUCCESS
+2026-01-30 10:30:46.234 | [CA01SSEGHK] ASR | StartFailoverJob | Command: Start-AzRecoveryServicesAsrUnplannedFailoverJob... | RUNNING
+2026-01-30 10:32:15.456 | [CA01SSEGHK] ASR | FailoverCompleted |  | SUCCESS
+2026-01-30 10:32:16.789 | [CA01SSEGHK] Email | NotificationSent |  | SUCCESS
+2026-01-30 10:32:17.012 |  Main | AllCompleted |  | SUCCESS
+```
+
+#### Log Modules
+| Module | Description |
+|--------|-------------|
+| Main | Main orchestration logic |
+| Config | Configuration loading |
+| Azure | Azure subscription/vault operations |
+| ASR | Site Recovery operations |
+| Email | Email notification operations |
+| Parallel | Parallel job management |
+| Retry | Retry mechanism events |
