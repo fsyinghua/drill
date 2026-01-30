@@ -3,7 +3,7 @@
 ## 项目概述
 提供基于PowerShell的Azure站点恢复(ASR)自动化演练工具，支持：
 - 设备认证免密登录
-- 5步标准化灾备演练流程
+- 6步标准化灾备演练流程
 - QQ邮箱自动通知
 
 ## 快速开始
@@ -34,4 +34,4 @@ Install-Module -Name Az.RecoveryServices -Scope CurrentUser
 ✅ 步骤化操作（1-5步严格流程）  
 ✅ 企业级邮件通知  
 
-> 完整操作文档见 [drill使用说明.md]
+> 完整操作文档见 [ASR_Drill_Guide.md]
