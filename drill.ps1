@@ -588,7 +588,7 @@ try {
         }
     }
 
-    if (-not `$WhatIf) {
+    if (`$WhatIf -eq `$false) {
         `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
         `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
         `$toList = `$emailConfig.to.Split(',')
