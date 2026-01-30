@@ -2,8 +2,11 @@ param(
     [string]$vmName,
     [string]$InputFile,
     [ValidateRange(1,6)][int]$step,
-    [switch]$WhatIf
+    [switch]$WhatIf,
+    [switch]$Parallel
 )
+
+$ErrorActionPreference = "Stop"
 
 function Read-Ini {
     (Get-Content $args[0]) -replace ' ', '' -join "`n" | ConvertFrom-StringData
@@ -12,7 +15,6 @@ function Read-Ini {
 $vmConfig = Read-Ini vm-config.ini
 $emailConfig = Read-Ini email-config.ini
 
-# Load VM list from input file
 $vmList = @()
 if ($InputFile) {
     if (-not (Test-Path $InputFile)) {
@@ -32,6 +34,233 @@ if ($InputFile) {
     $vmList = @($vmName)
 }
 
+if ($Parallel -and $vmList.Count -gt 1) {
+    Write-Host "[PARALLEL] Starting $($vmList.Count) parallel jobs..." -ForegroundColor Cyan
+    Write-Host ""
+
+    $jobs = @()
+    $logDir = Join-Path $env:TEMP "drill-logs-$([guid]::NewGuid().ToString('N')[0..7])"
+    New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+
+    foreach ($targetVm in $vmList) {
+        $logFile = Join-Path $logDir "$targetVm.log"
+
+        $scriptContent = @"
+ErrorActionPreference = "Stop"
+
+`$vmConfig = @{subscriptionId="$($vmConfig.subscriptionId)";vaultName="$($vmConfig.vaultName)";resourceGroup="$($vmConfig.resourceGroup)";fabricName="$($vmConfig.fabricName)";containerName="$($vmConfig.containerName)"}
+`$emailConfig = @{smtpServer="$($emailConfig.smtpServer)";port="$($emailConfig.port)";username="$($emailConfig.username)";password="$($emailConfig.password)";to="$($emailConfig.to)"}
+
+`$targetVm = "$targetVm"
+`$step = $step
+`$WhatIf = `$$WhatIf
+`$logFile = "$logFile"
+
+Import-Module Az.RecoveryServices -ErrorAction Stop
+
+`$log = @()
+`$log += "[START] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+`$log += "[CFG] Subscription: `$($vmConfig.subscriptionId)"
+
+Select-AzSubscription -SubscriptionId `$vmConfig.subscriptionId -ErrorAction Stop
+
+`$vault = Get-AzRecoveryServicesVault -Name `$vmConfig.vaultName -ResourceGroupName `$vmConfig.resourceGroup -ErrorAction Stop
+
+`$vaultSettingsDir = Join-Path `$env:TEMP "vault-settings-`$(New-Guid)"
+New-Item -ItemType Directory -Force -Path `$vaultSettingsDir | Out-Null
+`$vaultSettingsFile = Get-AzRecoveryServicesVaultSettingsFile -Vault `$vault -Path `$vaultSettingsDir -ErrorAction Stop
+Import-AzRecoveryServicesAsrVaultSettingsFile -Path `$vaultSettingsFile.FilePath -ErrorAction Stop
+
+`$container = Get-AzRecoveryServicesAsrFabric -Name `$vmConfig.fabricName |
+    Get-AzRecoveryServicesAsrProtectionContainer -Name `$vmConfig.containerName
+
+`$protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer `$container |
+    Where-Object { `$_.FriendlyName -eq `$targetVm }
+
+if (-not `$protectedItem) {
+    `$log += "[ERROR] VM not found: `$targetVm"
+    `$log | Out-File -FilePath `$logFile -Encoding UTF8
+    exit 1
+}
+
+`$log += "[VM] Processing: `$targetVm"
+
+switch (`$step) {
+    1 {
+        if (`$WhatIf) {
+            `$log += "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer"
+        } else {
+            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer
+            `$log += "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
+            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$log += "[DONE] Failover completed"
+        }
+    }
+    2 {
+        if (`$WhatIf) {
+            `$log += "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
+        } else {
+            `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
+            `$log += "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
+            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$log += "[DONE] Commit completed"
+        }
+    }
+    3 {
+        if (`$WhatIf) {
+            `$log += "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
+        } else {
+            `$job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
+            `$log += "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
+            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$log += "[DONE] Reprotect completed"
+        }
+    }
+    4 {
+        if (`$WhatIf) {
+            `$log += "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer"
+        } else {
+            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer
+            `$log += "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
+            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$log += "[DONE] Failback completed"
+        }
+    }
+    5 {
+        if (`$WhatIf) {
+            `$log += "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
+        } else {
+            `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
+            `$log += "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
+            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$log += "[DONE] Commit failback completed"
+        }
+    }
+    6 {
+        if (`$WhatIf) {
+            `$log += "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
+        } else {
+            `$job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
+            `$log += "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
+            `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+            `$log += "[DONE] Reprotect restore completed"
+        }
+    }
+}
+
+if (-not `$WhatIf) {
+    `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
+    `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
+    `$toList = `$emailConfig.to.Split(',')
+
+    `$body = "Operation completed for `$targetVm (step `$step)`nTimestamp: `$(Get-Date)"
+
+    Send-MailMessage -SmtpServer `$emailConfig.smtpServer -Port `$emailConfig.port -UseSsl -Credential `$cred -From `$emailConfig.username -To `$toList -Subject "[DRILL] `$targetVm step `$step" -Body `$body -Encoding UTF8
+    `$log += "[EMAIL] Notification sent"
+} else {
+    `$log += "[WHATIF] Send-MailMessage -Subject '[DRILL] `$targetVm step `$step'"
+}
+
+`$log += "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+`$log | Out-File -FilePath `$logFile -Encoding UTF8
+"@
+
+        $tempScript = Join-Path $logDir "job-$targetVm.ps1"
+        $scriptContent | Out-File -FilePath $tempScript -Encoding UTF8
+
+        $job = Start-Job -ScriptBlock {
+            param($ScriptPath)
+            & $env:COMSPEC /c "pwsh -File `"$ScriptPath`""
+        } -ArgumentList $tempScript -Name $targetVm
+
+        $jobs += @{
+            Name = $targetVm
+            Job = $job
+            LogFile = $logFile
+        }
+
+        Write-Host "[PARALLEL] Started: $targetVm (Job ID: $($job.Id))" -ForegroundColor Cyan
+    }
+
+    Write-Host ""
+    Write-Host "[MONITOR] All jobs started. Waiting for completion..." -ForegroundColor Cyan
+    Write-Host ""
+
+    $running = $true
+    while ($running) {
+        $running = $false
+        $completed = 0
+        $failed = 0
+
+        foreach ($item in $jobs) {
+            $job = $item.Job
+            $jobState = $job.State
+
+            if ($jobState -eq "Running") {
+                $running = $true
+                $status = "RUNNING"
+            } elseif ($jobState -eq "Completed") {
+                $status = "DONE"
+                $completed++
+            } elseif ($jobState -eq "Failed") {
+                $status = "FAILED"
+                $failed++
+            } else {
+                $status = $jobState
+                $running = $true
+            }
+
+            $statusColor = if ($status -eq "DONE") { "Green" } elseif ($status -eq "FAILED") { "Red" } elseif ($status -eq "RUNNING") { "Yellow" } else { "Gray" }
+            Write-Host "  [$status] $($item.Name)" -ForegroundColor $statusColor -NoNewline
+
+            if (Test-Path $item.LogFile) {
+                $lastLine = Get-Content $item.LogFile -Tail 1 -ErrorAction SilentlyContinue
+                if ($lastLine -match "\[RUN\]|\[WHATIF\]|\[DONE\]|\[ERROR\]") {
+                    Write-Host " -> $lastLine" -ForegroundColor DarkGray
+                } else {
+                    Write-Host ""
+                }
+            } else {
+                Write-Host ""
+            }
+        }
+
+        if ($running) {
+            Start-Sleep -Seconds 3
+        }
+    }
+
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "[RESULT] Parallel Execution Summary" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "Total VMs: $($jobs.Count)"
+    Write-Host "Completed: $completed" -ForegroundColor Green
+    Write-Host "Failed: $failed" -ForegroundColor $(if ($failed -gt 0) { "Red" } else { "Green" })
+    Write-Host ""
+
+    Write-Host "[LOG FILES]" -ForegroundColor Cyan
+    foreach ($item in $jobs) {
+        if (Test-Path $item.LogFile) {
+            $content = Get-Content $item.LogFile
+            if ($content -match "\[ERROR\]") {
+                Write-Host "  $($item.Name): ERROR FOUND" -ForegroundColor Red
+            } else {
+                Write-Host "  $($item.Name): OK" -ForegroundColor Green
+            }
+        }
+    }
+    Write-Host ""
+
+    if ($failed -eq 0) {
+        Write-Host "[OK] All parallel jobs completed successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "[FAIL] Some jobs failed. Check log files for details." -ForegroundColor Red
+    }
+
+    exit 0
+}
+
 Import-Module Az.RecoveryServices
 
 Write-Host "[CFG] : Subscription $($vmConfig.subscriptionId)" -ForegroundColor Cyan
@@ -45,24 +274,20 @@ New-Item -ItemType Directory -Force -Path $vaultSettingsDir | Out-Null
 $vaultSettingsFile = Get-AzRecoveryServicesVaultSettingsFile -Vault $vault -Path $vaultSettingsDir -ErrorAction Stop
 Import-AzRecoveryServicesAsrVaultSettingsFile -Path $vaultSettingsFile.FilePath -ErrorAction Stop
 
-# Prepare email credentials
 $securePassword = ConvertTo-SecureString $emailConfig.password -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PSCredential(
     $emailConfig.username,
     $securePassword
 )
 
-# Process each VM
 foreach ($targetVm in $vmList) {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "[VM] Processing: $targetVm" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
 
-    # Get protection container
     $container = Get-AzRecoveryServicesAsrFabric -Name $vmConfig.fabricName |
         Get-AzRecoveryServicesAsrProtectionContainer -Name $vmConfig.containerName
 
-    # Find protected item
     $protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer $container |
         Where-Object { $_.FriendlyName -eq $targetVm }
 
@@ -71,67 +296,85 @@ foreach ($targetVm in $vmList) {
         continue
     }
 
-    # Execute failover step
     switch ($step) {
         1 {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer" -ForegroundColor Yellow
             } else {
-                Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject $protectedItem `
+                $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject $protectedItem `
                     -Direction PrimaryToRecovery `
                     -PerformSourceSideActions `
                     -ShutDownSourceServer
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery" -ForegroundColor Cyan
+                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                Write-Host "[DONE] : Failover completed" -ForegroundColor Green
             }
         }
         2 {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Yellow
             } else {
-                Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject $protectedItem
+                $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject $protectedItem
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Cyan
+                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                Write-Host "[DONE] : Commit completed" -ForegroundColor Green
             }
         }
         3 {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Yellow
             } else {
-                Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject $protectedItem
+                $job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject $protectedItem
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
+                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                Write-Host "[DONE] : Reprotect completed" -ForegroundColor Green
             }
         }
         4 {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer" -ForegroundColor Yellow
             } else {
-                Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject $protectedItem `
+                $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject $protectedItem `
                     -Direction RecoveryToPrimary `
                     -PerformSourceSideActions `
                     -ShutDownSourceServer
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary" -ForegroundColor Cyan
+                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                Write-Host "[DONE] : Failback completed" -ForegroundColor Green
             }
         }
         5 {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Yellow
             } else {
-                Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject $protectedItem
+                $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject $protectedItem
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Cyan
+                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                Write-Host "[DONE] : Commit failback completed" -ForegroundColor Green
             }
         }
         6 {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Yellow
             } else {
-                Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject $protectedItem
+                $job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject $protectedItem
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
+                $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
+                Write-Host "[DONE] : Reprotect restore completed" -ForegroundColor Green
             }
         }
     }
 
-    # Send email notification
     if (-not $WhatIf) {
+        $toList = $emailConfig.to.Split(',')
         Send-MailMessage -SmtpServer $emailConfig.smtpServer `
             -Port $emailConfig.port -UseSsl -Credential $cred `
             -From $emailConfig.username `
-            -To $emailConfig.to.Split(',') `
+            -To $toList `
             -Subject "[DRILL] $targetVm step $step" `
             -Body "Operation completed for $targetVm (step $step)`nTimestamp: $(Get-Date)" `
             -Encoding UTF8
+        Write-Host "[EMAIL] : Notification sent" -ForegroundColor Cyan
     } else {
         Write-Host "[WHATIF] : Send-MailMessage -Subject '[DRILL] $targetVm step $step'" -ForegroundColor Yellow
     }
