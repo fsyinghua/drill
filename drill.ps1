@@ -275,18 +275,16 @@ switch ($step) {
                 Write-Log "[INFO] Using protection container mapping: $($pcm.Name)"
                 $logStorageId = $vmConfig.logStorageAccountId
                 if ([string]::IsNullOrEmpty($logStorageId)) {
-                    Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -ProtectionContainerMapping `$pcm"
+                    Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ProtectionContainerMapping `$pcm -ReplicationProtectedItem `$protectedItem"
                     $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                        -ReplicationProtectedItem $protectedItem `
-                        -Direction RecoveryToPrimary `
-                        -ProtectionContainerMapping $pcm
-                } else {
-                    Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -ProtectionContainerMapping `$pcm -LogStorageAccountId `$logStorageId"
-                    $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                        -ReplicationProtectedItem $protectedItem `
-                        -Direction RecoveryToPrimary `
                         -ProtectionContainerMapping $pcm `
-                        -LogStorageAccountId $logStorageId
+                        -ReplicationProtectedItem $protectedItem
+                } else {
+                    Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ProtectionContainerMapping `$pcm -LogStorageAccountId `$logStorageId -ReplicationProtectedItem `$protectedItem"
+                    $job = Update-AzRecoveryServicesAsrProtectionDirection `
+                        -ProtectionContainerMapping $pcm `
+                        -LogStorageAccountId $logStorageId `
+                        -ReplicationProtectedItem $protectedItem
                 }
             }
 
@@ -335,18 +333,16 @@ switch ($step) {
                 Write-Log "[INFO] Using protection container mapping: $($pcm.Name)"
                 $logStorageId = $vmConfig.logStorageAccountId
                 if ([string]::IsNullOrEmpty($logStorageId)) {
-                    Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -ProtectionContainerMapping `$pcm"
+                    Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ProtectionContainerMapping `$pcm -ReplicationProtectedItem `$protectedItem"
                     $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                        -ReplicationProtectedItem $protectedItem `
-                        -Direction RecoveryToPrimary `
-                        -ProtectionContainerMapping $pcm
-                } else {
-                    Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -ProtectionContainerMapping `$pcm -LogStorageAccountId `$logStorageId"
-                    $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                        -ReplicationProtectedItem $protectedItem `
-                        -Direction RecoveryToPrimary `
                         -ProtectionContainerMapping $pcm `
-                        -LogStorageAccountId $logStorageId
+                        -ReplicationProtectedItem $protectedItem
+                } else {
+                    Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ProtectionContainerMapping `$pcm -LogStorageAccountId `$logStorageId -ReplicationProtectedItem `$protectedItem"
+                    $job = Update-AzRecoveryServicesAsrProtectionDirection `
+                        -ProtectionContainerMapping $pcm `
+                        -LogStorageAccountId $logStorageId `
+                        -ReplicationProtectedItem $protectedItem
                 }
             }
 
@@ -551,18 +547,16 @@ foreach ($targetVm in $vmList) {
                     Write-Host "[INFO] : Using protection container mapping: $($pcm.Name)" -ForegroundColor Cyan
                     $logStorageId = $vmConfig.logStorageAccountId
                     if ([string]::IsNullOrEmpty($logStorageId)) {
-                        Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -ProtectionContainerMapping `$pcm" -ForegroundColor Magenta
+                        Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ProtectionContainerMapping `$pcm -ReplicationProtectedItem `$protectedItem" -ForegroundColor Magenta
                         $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                            -ReplicationProtectedItem $protectedItem `
-                            -Direction RecoveryToPrimary `
-                            -ProtectionContainerMapping $pcm
-                    } else {
-                        Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -ProtectionContainerMapping `$pcm -LogStorageAccountId `$logStorageId" -ForegroundColor Magenta
-                        $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                            -ReplicationProtectedItem $protectedItem `
-                            -Direction RecoveryToPrimary `
                             -ProtectionContainerMapping $pcm `
-                            -LogStorageAccountId $logStorageId
+                            -ReplicationProtectedItem $protectedItem
+                    } else {
+                        Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ProtectionContainerMapping `$pcm -LogStorageAccountId `$logStorageId -ReplicationProtectedItem `$protectedItem" -ForegroundColor Magenta
+                        $job = Update-AzRecoveryServicesAsrProtectionDirection `
+                            -ProtectionContainerMapping $pcm `
+                            -LogStorageAccountId $logStorageId `
+                            -ReplicationProtectedItem $protectedItem
                     }
                 }
 
@@ -610,18 +604,16 @@ foreach ($targetVm in $vmList) {
                     Write-Host "[INFO] : Using protection container mapping: $($pcm.Name)" -ForegroundColor Cyan
                     $logStorageId = $vmConfig.logStorageAccountId
                     if ([string]::IsNullOrEmpty($logStorageId)) {
-                        Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -ProtectionContainerMapping `$pcm" -ForegroundColor Magenta
+                        Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ProtectionContainerMapping `$pcm -ReplicationProtectedItem `$protectedItem" -ForegroundColor Magenta
                         $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                            -ReplicationProtectedItem $protectedItem `
-                            -Direction RecoveryToPrimary `
-                            -ProtectionContainerMapping $pcm
-                    } else {
-                        Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -ProtectionContainerMapping `$pcm -LogStorageAccountId `$logStorageId" -ForegroundColor Magenta
-                        $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                            -ReplicationProtectedItem $protectedItem `
-                            -Direction RecoveryToPrimary `
                             -ProtectionContainerMapping $pcm `
-                            -LogStorageAccountId $logStorageId
+                            -ReplicationProtectedItem $protectedItem
+                    } else {
+                        Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ProtectionContainerMapping `$pcm -LogStorageAccountId `$logStorageId -ReplicationProtectedItem `$protectedItem" -ForegroundColor Magenta
+                        $job = Update-AzRecoveryServicesAsrProtectionDirection `
+                            -ProtectionContainerMapping $pcm `
+                            -LogStorageAccountId $logStorageId `
+                            -ReplicationProtectedItem $protectedItem
                     }
                 }
 
