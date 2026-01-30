@@ -1,0 +1,132 @@
+# 批量ASR演练测试报告 - Step 1-6完整测试
+
+**测试日期**: 2026-01-30
+**执行模式**: WhatIf (预览)
+**VM数量**: 16台
+
+---
+
+## 测试状态汇总
+
+| 步骤 | 操作 | VM数 | 状态 |
+|:---:|:----|:---:|:---:|
+| Step 1 | 计划性故障转移 (Primary→Recovery) | 16/16 | ✅ |
+| Step 2 | 确认故障转移 | 16/16 | ✅ |
+| Step 3 | 逆向同步 (Recovery→Primary) | 16/16 | ✅ |
+| Step 4 | 故障还原 (Recovery→Primary) | 16/16 | ✅ |
+| Step 5 | 确认故障还原 | 16/16 | ✅ |
+| Step 6 | 恢复正向同步 | 16/16 | ✅ |
+
+---
+
+## 已测试VM列表
+
+1. CA01SSEGHK
+2. DMS15SSEGHK
+3. DMS16SSEGHK
+4. DMSP06UATDHHK
+5. GLD02SSDHHK
+6. GLD02SSEGHK
+7. GLDAPP01VMP
+8. GSDAPP01VMP
+9. GSDAPP02VMT
+10. GSDCSADB01VMP
+11. INFGAL01VMP
+12. INFMID02VMP
+13. INFFPS01VMP
+14. UNF01VMP
+15. UNF02VMP
+16. UNF03VMP
+
+---
+
+## Step 1 测试结果
+
+**命令**: `.\drill.ps1 -InputFile vms.txt -step 1 -WhatIf`
+
+所有VM执行:
+```
+Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer
+```
+(计划性故障转移 Primary→Recovery)
+
+---
+
+## Step 2 测试结果
+
+**命令**: `.\drill.ps1 -InputFile vms.txt -step 2 -WhatIf`
+
+所有VM执行:
+```
+Start-AzRecoveryServicesAsrCommitFailoverJob
+```
+(确认故障转移)
+
+---
+
+## Step 3 测试结果
+
+**命令**: `.\drill.ps1 -InputFile vms.txt -step 3 -WhatIf`
+
+所有VM执行:
+```
+Start-AzRecoveryServicesAsrReprotectJob
+```
+(逆向同步 Recovery→Primary)
+
+---
+
+## Step 4 测试结果
+
+**命令**: `.\drill.ps1 -InputFile vms.txt -step 4 -WhatIf`
+
+所有VM执行:
+```
+Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer
+```
+(故障还原 Recovery→Primary)
+
+---
+
+## Step 5 测试结果
+
+**命令**: `.\drill.ps1 -InputFile vms.txt -step 5 -WhatIf`
+
+所有VM执行:
+```
+Start-AzRecoveryServicesAsrCommitFailoverJob
+```
+(确认故障还原)
+
+---
+
+## Step 6 测试结果
+
+**命令**: `.\drill.ps1 -InputFile vms.txt -step 6 -WhatIf`
+
+所有VM执行:
+```
+Start-AzRecoveryServicesAsrReprotectJob
+```
+(恢复正向同步 Primary→Recovery)
+
+---
+
+## 验证结论
+
+✅ **所有6个步骤的WhatIf预览输出符合设计预期**
+
+| 验证项 | 结果 |
+|:----|:---:|
+| Step 1: 故障转移方向正确 (Primary→Recovery) | ✅ |
+| Step 2: Commit操作正确 | ✅ |
+| Step 3: Reprotect逆向同步正确 | ✅ |
+| Step 4: 故障还原方向正确 (Recovery→Primary) | ✅ |
+| Step 5: Commit操作正确 | ✅ |
+| Step 6: Reprotect正向恢复正确 | ✅ |
+| 邮件通知功能正常 | ✅ |
+| 批量16台VM全部处理成功 | ✅ |
+
+---
+
+**报告生成时间**: 2026-01-30
