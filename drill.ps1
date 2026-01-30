@@ -125,204 +125,204 @@ if ($Parallel -and $vmList.Count -gt 1) {
         $scriptContent = @"
 ErrorActionPreference = "Stop"
 
-`$vmConfig = @{subscriptionId="$($vmConfig.subscriptionId)";vaultName="$($vmConfig.vaultName)";resourceGroup="$($vmConfig.resourceGroup)";fabricName="$($vmConfig.fabricName)";containerName="$($vmConfig.containerName)"}
-`$emailConfig = @{smtpServer="$($emailConfig.smtpServer)";port="$($emailConfig.port)";username="$($emailConfig.username)";password="$($emailConfig.password)";to="$($emailConfig.to)"}
+$vmConfig = @{subscriptionId="$($vmConfig.subscriptionId)";vaultName="$($vmConfig.vaultName)";resourceGroup="$($vmConfig.resourceGroup)";fabricName="$($vmConfig.fabricName)";containerName="$($vmConfig.containerName)"}
+$emailConfig = @{smtpServer="$($emailConfig.smtpServer)";port="$($emailConfig.port)";username="$($emailConfig.username)";password="$($emailConfig.password)";to="$($emailConfig.to)"}
 
-`$targetVm = "$targetVm"
-`$step = $step
-`$WhatIf = `$$WhatIf
-`$logFile = "$logFile"
+$targetVm = "$targetVm"
+$step = $step
+$WhatIf = $$WhatIf
+$logFile = "$logFile"
 
-`$operationStartTime = Get-Date
+$operationStartTime = Get-Date
 
-New-Item -ItemType File -Path `$logFile -Force | Out-Null
+New-Item -ItemType File -Path $logFile -Force | Out-Null
 
 function Write-Log {
-    param([string]`$Message)
-    `$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    `$Message = "[$timestamp] `$Message"
-    `$Message | Out-File -FilePath `$logFile -Encoding UTF8 -Append
-    [Console]::WriteLine(`$Message)
+    param([string]$Message)
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $Message = "[$timestamp] $Message"
+    $Message | Out-File -FilePath $logFile -Encoding UTF8 -Append
+    [Console]::WriteLine($Message)
     [Console]::Out.Flush()
 }
 
 function Get-ElapsedTime {
-    param([DateTime]`$StartTime, [DateTime]`$EndTime)
-    `$duration = `$EndTime - `$StartTime
-    if (`$duration.TotalHours -ge 1) {
-        return "$([math]::Round(`$duration.TotalHours, 2)) hours"
-    } elseif (`$duration.TotalMinutes -ge 1) {
-        return "$([math]::Round(`$duration.TotalMinutes, 2)) minutes"
+    param([DateTime]$StartTime, [DateTime]$EndTime)
+    $duration = $EndTime - $StartTime
+    if ($duration.TotalHours -ge 1) {
+        return "$([math]::Round($duration.TotalHours, 2)) hours"
+    } elseif ($duration.TotalMinutes -ge 1) {
+        return "$([math]::Round($duration.TotalMinutes, 2)) minutes"
     } else {
-        return "$([math]::Round(`$duration.TotalSeconds, 2)) seconds"
+        return "$([math]::Round($duration.TotalSeconds, 2)) seconds"
     }
 }
 
 function Wait-AsrJob {
-    param([object]`$Job)
+    param([object]$Job)
 
-    if (`$null -eq `$Job) {
+    if ($null -eq $Job) {
         throw "ASR Job was not created"
     }
 
-    `$jobStartTime = Get-Date
-    Write-Log "  Job started: `$(`$Job.Name) - State: `$(`$Job.State)"
+    $jobStartTime = Get-Date
+    Write-Log "  Job started: $($Job.Name) - State: $($Job.State)"
 
-    `$maxWaitMinutes = 60
-    `$startTime = Get-Date
+    $maxWaitMinutes = 60
+    $startTime = Get-Date
 
-    while (`$Job.State -eq "InProgress" -or `$Job.State -eq "NotStarted") {
-        `$elapsed = (Get-Date) - `$startTime
-        if (`$elapsed.TotalMinutes -gt `$maxWaitMinutes) {
-            throw "ASR Job timeout after `$maxWaitMinutes minutes"
+    while ($Job.State -eq "InProgress" -or $Job.State -eq "NotStarted") {
+        $elapsed = (Get-Date) - $startTime
+        if ($elapsed.TotalMinutes -gt $maxWaitMinutes) {
+            throw "ASR Job timeout after $maxWaitMinutes minutes"
         }
 
         Start-Sleep -Seconds 15
         try {
-            `$Job = Get-AzRecoveryServicesAsrJob -Job `$Job
+            $Job = Get-AzRecoveryServicesAsrJob -Job $Job
         } catch {
-            Write-Log "  Warning: Failed to refresh job status: `$_"
+            Write-Log "  Warning: Failed to refresh job status: $_"
         }
-        Write-Log "  Job status: `$(`$Job.State) (Elapsed: `$([math]::Round(`$elapsed.TotalMinutes, 1)) min)"
+        Write-Log "  Job status: $($Job.State) (Elapsed: $([math]::Round($elapsed.TotalMinutes, 1)) min)"
     }
 
-    if (`$Job.State -ne "Completed" -and `$Job.State -ne "Succeeded") {
-        `$errorMsg = `$Job.ErrorDescription
-        if ([string]::IsNullOrEmpty(`$errorMsg)) {
-            `$errorMsg = "State: `$(`$Job.State)"
+    if ($Job.State -ne "Completed" -and $Job.State -ne "Succeeded") {
+        $errorMsg = $Job.ErrorDescription
+        if ([string]::IsNullOrEmpty($errorMsg)) {
+            $errorMsg = "State: $($Job.State)"
         }
-        throw "ASR Job failed: `$errorMsg"
+        throw "ASR Job failed: $errorMsg"
     }
 
-    `$jobEndTime = Get-Date
-    `$duration = `$jobEndTime - `$jobStartTime
-    `$durationText = Get-ElapsedTime -StartTime `$jobStartTime -EndTime `$jobEndTime
+    $jobEndTime = Get-Date
+    $duration = $jobEndTime - $jobStartTime
+    $durationText = Get-ElapsedTime -StartTime $jobStartTime -EndTime $jobEndTime
 
-    Write-Log "  Job completed: `$(`$Job.Name) (Duration: `$durationText)"
+    Write-Log "  Job completed: $($Job.Name) (Duration: $durationText)"
     return @{
-        Job = `$Job
-        StartTime = `$jobStartTime
-        EndTime = `$jobEndTime
-        Duration = `$durationText
+        Job = $Job
+        StartTime = $jobStartTime
+        EndTime = $jobEndTime
+        Duration = $durationText
     }
 }
 
 Import-Module Az.RecoveryServices -ErrorAction Stop
 
-Write-Log "[START] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-Write-Log "[CFG] Subscription: `$($vmConfig.subscriptionId)"
+Write-Log "[START] $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+Write-Log "[CFG] Subscription: $($vmConfig.subscriptionId)"
 
-Select-AzSubscription -SubscriptionId `$vmConfig.subscriptionId -ErrorAction Stop
+Select-AzSubscription -SubscriptionId $vmConfig.subscriptionId -ErrorAction Stop
 
-`$vault = Get-AzRecoveryServicesVault -Name `$vmConfig.vaultName -ResourceGroupName `$vmConfig.resourceGroup -ErrorAction Stop
+$vault = Get-AzRecoveryServicesVault -Name $vmConfig.vaultName -ResourceGroupName $vmConfig.resourceGroup -ErrorAction Stop
 
-`$vaultSettingsDir = Join-Path `$env:TEMP "vault-settings-`$(New-Guid)"
-New-Item -ItemType Directory -Force -Path `$vaultSettingsDir | Out-Null
-`$vaultSettingsFile = Get-AzRecoveryServicesVaultSettingsFile -Vault `$vault -Path `$vaultSettingsDir -ErrorAction Stop
-Import-AzRecoveryServicesAsrVaultSettingsFile -Path `$vaultSettingsFile.FilePath -ErrorAction Stop
+$vaultSettingsDir = Join-Path $env:TEMP "vault-settings-$(New-Guid)"
+New-Item -ItemType Directory -Force -Path $vaultSettingsDir | Out-Null
+$vaultSettingsFile = Get-AzRecoveryServicesVaultSettingsFile -Vault $vault -Path $vaultSettingsDir -ErrorAction Stop
+Import-AzRecoveryServicesAsrVaultSettingsFile -Path $vaultSettingsFile.FilePath -ErrorAction Stop
 
-`$container = Get-AzRecoveryServicesAsrFabric -Name `$vmConfig.fabricName |
-    Get-AzRecoveryServicesAsrProtectionContainer -Name `$vmConfig.containerName
+$container = Get-AzRecoveryServicesAsrFabric -Name $vmConfig.fabricName |
+    Get-AzRecoveryServicesAsrProtectionContainer -Name $vmConfig.containerName
 
-`$protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer `$container |
-    Where-Object { `$_.FriendlyName -eq `$targetVm }
+$protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer $container |
+    Where-Object { $_.FriendlyName -eq $targetVm }
 
-if (-not `$protectedItem) {
-    Write-Log "[ERROR] VM not found: `$targetVm"
+if (-not $protectedItem) {
+    Write-Log "[ERROR] VM not found: $targetVm"
     exit 1
 }
 
-Write-Log "[VM] Processing: `$targetVm"
+Write-Log "[VM] Processing: $targetVm"
 
-switch (`$step) {
+switch ($step) {
     1 {
-        if (`$WhatIf) {
+        if ($WhatIf) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideAction"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideAction
+            $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem $protectedItem -Direction PrimaryToRecovery -PerformSourceSideAction
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
-            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            $jobResult = Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failover completed"
         }
     }
     2 {
-        if (`$WhatIf) {
+        if ($WhatIf) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem `$protectedItem
+            $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem $protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
-            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            $jobResult = Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Commit completed"
         }
     }
     3 {
-        if (`$WhatIf) {
+        if ($WhatIf) {
             Write-Log "[WHATIF] Set-AzRecoveryServicesAsrReplicationProtectedItem (reprotect operation)"
             Write-Log "[INFO] : Please verify available ASR cmdlets"
             Start-Sleep -Milliseconds 500
         } else {
             Write-Log "[ERROR] Step 3 reprotect requires manual verification"
             Write-Log "[INFO] : Run 'Get-Command -Module Az.RecoveryServices -Name *Asr*' to list available cmdlets"
-            `$jobResult = @{ Success = `$false; Message = "Reprotect operation requires manual verification" }
+            $jobResult = @{ Success = $false; Message = "Reprotect operation requires manual verification" }
             Write-Log "[DONE] Reprotect step requires manual verification"
         }
     }
     4 {
-        if (`$WhatIf) {
+        if ($WhatIf) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideAction"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideAction
+            $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem $protectedItem -Direction RecoveryToPrimary -PerformSourceSideAction
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
-            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            $jobResult = Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failback completed"
         }
     }
     5 {
-        if (`$WhatIf) {
+        if ($WhatIf) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem `$protectedItem
+            $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem $protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
-            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            $jobResult = Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Commit failback completed"
         }
     }
     6 {
-        if (`$WhatIf) {
+        if ($WhatIf) {
             Write-Log "[WHATIF] Set-AzRecoveryServicesAsrReplicationProtectedItem (reprotect restore operation)"
             Write-Log "[INFO] : Please verify available ASR cmdlets"
             Start-Sleep -Milliseconds 500
         } else {
             Write-Log "[ERROR] Step 6 reprotect restore requires manual verification"
             Write-Log "[INFO] : Run 'Get-Command -Module Az.RecoveryServices -Name *Asr*' to list available cmdlets"
-            `$jobResult = @{ Success = `$false; Message = "Reprotect restore operation requires manual verification" }
+            $jobResult = @{ Success = $false; Message = "Reprotect restore operation requires manual verification" }
             Write-Log "[DONE] Reprotect restore step requires manual verification"
         }
     }
 }
 
-if (-not `$WhatIf) {
-    `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
-    `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
-    `$toList = `$emailConfig.to.Split(',')
+if (-not $WhatIf) {
+    $securePassword = ConvertTo-SecureString $emailConfig.password -AsPlainText -Force
+    $cred = New-Object System.Management.Automation.PSCredential($emailConfig.username, $securePassword)
+    $toList = $emailConfig.to.Split(',')
 
-    `$startTimeFormatted = `$operationStartTime.ToString('yyyy-MM-dd HH:mm:ss')
-    `$endTimeFormatted = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    `$totalDuration = Get-ElapsedTime -StartTime `$operationStartTime -EndTime (Get-Date)
+    $startTimeFormatted = $operationStartTime.ToString('yyyy-MM-dd HH:mm:ss')
+    $endTimeFormatted = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $totalDuration = Get-ElapsedTime -StartTime $operationStartTime -EndTime (Get-Date)
 
-    `$body = "Operation completed for `$targetVm (step `$step)`n`nStart Time: `$startTimeFormatted`nEnd Time: `$endTimeFormatted`nDuration: `$totalDuration`n`nTimestamp: `$(Get-Date)"
+    $body = "Operation completed for $targetVm (step $step)`n`nStart Time: $startTimeFormatted`nEnd Time: $endTimeFormatted`nDuration: $totalDuration`n`nTimestamp: $(Get-Date)"
 
-    Send-MailMessage -SmtpServer `$emailConfig.smtpServer -Port `$emailConfig.port -UseSsl -Credential `$cred -From `$emailConfig.username -To `$toList -Subject "[DRILL] `$targetVm step `$step" -Body `$body -Encoding UTF8
+    Send-MailMessage -SmtpServer $emailConfig.smtpServer -Port $emailConfig.port -UseSsl -Credential $cred -From $emailConfig.username -To $toList -Subject "[DRILL] $targetVm step $step" -Body $body -Encoding UTF8
     Write-Log "[EMAIL] Notification sent"
 } else {
-    Write-Log "[WHATIF] Send-MailMessage -Subject '[DRILL] `$targetVm step `$step'"
+    Write-Log "[WHATIF] Send-MailMessage -Subject '[DRILL] $targetVm step $step'"
 }
 
-Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+Write-Log "[END] $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 "@
 
         $tempScript = Join-Path $logDir "job-$targetVm.ps1"
@@ -577,3 +577,4 @@ foreach ($targetVm in $vmList) {
         Write-Host "[WHATIF] : Send-MailMessage -Subject '[DRILL] $targetVm step $step'" -ForegroundColor Yellow
     }
 }
+
