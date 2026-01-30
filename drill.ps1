@@ -56,11 +56,19 @@ ErrorActionPreference = "Stop"
 `$WhatIf = `$$WhatIf
 `$logFile = "$logFile"
 
+New-Item -ItemType File -Path `$logFile -Force | Out-Null
+
+function Write-Log {
+    param([string]`$Message)
+    `$Message | Out-File -FilePath `$logFile -Encoding UTF8 -Append
+    [Console]::WriteLine(`$Message)
+    [Console]::Out.Flush()
+}
+
 Import-Module Az.RecoveryServices -ErrorAction Stop
 
-`$log = @()
-`$log += "[START] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-`$log += "[CFG] Subscription: `$($vmConfig.subscriptionId)"
+Write-Log "[START] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+Write-Log "[CFG] Subscription: `$($vmConfig.subscriptionId)"
 
 Select-AzSubscription -SubscriptionId `$vmConfig.subscriptionId -ErrorAction Stop
 
@@ -78,72 +86,77 @@ Import-AzRecoveryServicesAsrVaultSettingsFile -Path `$vaultSettingsFile.FilePath
     Where-Object { `$_.FriendlyName -eq `$targetVm }
 
 if (-not `$protectedItem) {
-    `$log += "[ERROR] VM not found: `$targetVm"
-    `$log | Out-File -FilePath `$logFile -Encoding UTF8
+    Write-Log "[ERROR] VM not found: `$targetVm"
     exit 1
 }
 
-`$log += "[VM] Processing: `$targetVm"
+Write-Log "[VM] Processing: `$targetVm"
 
 switch (`$step) {
     1 {
         if (`$WhatIf) {
-            `$log += "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer"
+            Start-Sleep -Milliseconds 500
         } else {
             `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer
-            `$log += "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-            `$log += "[DONE] Failover completed"
+            Write-Log "[DONE] Failover completed"
         }
     }
     2 {
         if (`$WhatIf) {
-            `$log += "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
+            Start-Sleep -Milliseconds 500
         } else {
             `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
-            `$log += "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-            `$log += "[DONE] Commit completed"
+            Write-Log "[DONE] Commit completed"
         }
     }
     3 {
         if (`$WhatIf) {
-            `$log += "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
+            Start-Sleep -Milliseconds 500
         } else {
             `$job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
-            `$log += "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-            `$log += "[DONE] Reprotect completed"
+            Write-Log "[DONE] Reprotect completed"
         }
     }
     4 {
         if (`$WhatIf) {
-            `$log += "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer"
+            Start-Sleep -Milliseconds 500
         } else {
             `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer
-            `$log += "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-            `$log += "[DONE] Failback completed"
+            Write-Log "[DONE] Failback completed"
         }
     }
     5 {
         if (`$WhatIf) {
-            `$log += "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
+            Start-Sleep -Milliseconds 500
         } else {
             `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
-            `$log += "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-            `$log += "[DONE] Commit failback completed"
+            Write-Log "[DONE] Commit failback completed"
         }
     }
     6 {
         if (`$WhatIf) {
-            `$log += "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
+            Start-Sleep -Milliseconds 500
         } else {
             `$job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
-            `$log += "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-            `$log += "[DONE] Reprotect restore completed"
+            Write-Log "[DONE] Reprotect restore completed"
         }
     }
 }
@@ -156,13 +169,12 @@ if (-not `$WhatIf) {
     `$body = "Operation completed for `$targetVm (step `$step)`nTimestamp: `$(Get-Date)"
 
     Send-MailMessage -SmtpServer `$emailConfig.smtpServer -Port `$emailConfig.port -UseSsl -Credential `$cred -From `$emailConfig.username -To `$toList -Subject "[DRILL] `$targetVm step `$step" -Body `$body -Encoding UTF8
-    `$log += "[EMAIL] Notification sent"
+    Write-Log "[EMAIL] Notification sent"
 } else {
-    `$log += "[WHATIF] Send-MailMessage -Subject '[DRILL] `$targetVm step `$step'"
+    Write-Log "[WHATIF] Send-MailMessage -Subject '[DRILL] `$targetVm step `$step'"
 }
 
-`$log += "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
-`$log | Out-File -FilePath `$logFile -Encoding UTF8
+Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 "@
 
         $tempScript = Join-Path $logDir "job-$targetVm.ps1"
@@ -170,7 +182,7 @@ if (-not `$WhatIf) {
 
         $job = Start-Job -ScriptBlock {
             param($ScriptPath)
-            & $env:COMSPEC /c "pwsh -File `"$ScriptPath`""
+            pwsh -File $ScriptPath
         } -ArgumentList $tempScript -Name $targetVm
 
         $jobs += @{
@@ -211,22 +223,18 @@ if (-not `$WhatIf) {
             }
 
             $statusColor = if ($status -eq "DONE") { "Green" } elseif ($status -eq "FAILED") { "Red" } elseif ($status -eq "RUNNING") { "Yellow" } else { "Gray" }
-            Write-Host "  [$status] $($item.Name)" -ForegroundColor $statusColor -NoNewline
 
-            if (Test-Path $item.LogFile) {
-                $lastLine = Get-Content $item.LogFile -Tail 1 -ErrorAction SilentlyContinue
-                if ($lastLine -match "\[RUN\]|\[WHATIF\]|\[DONE\]|\[ERROR\]") {
-                    Write-Host " -> $lastLine" -ForegroundColor DarkGray
-                } else {
-                    Write-Host ""
-                }
+            if ($status -eq "RUNNING") {
+                $stepName = @("","Failover (Primary→Recovery)","Commit Failover","Reprotect","Failback (Recovery→Primary)","Commit Failback","Reprotect Restore")[$step]
+                Write-Host "  [$status] $($item.Name)" -ForegroundColor $statusColor -NoNewline
+                Write-Host " -> Step $step`: $stepName" -ForegroundColor Cyan
             } else {
-                Write-Host ""
+                Write-Host "  [$status] $($item.Name)" -ForegroundColor $statusColor
             }
         }
 
         if ($running) {
-            Start-Sleep -Seconds 3
+            Start-Sleep -Seconds 1
         }
     }
 
