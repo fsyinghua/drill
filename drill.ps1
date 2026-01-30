@@ -257,7 +257,7 @@ try {
     `$protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer `$container |
         Where-Object { `$_.FriendlyName -eq `$targetVm }
 
-    if ((-not `$protectedItem)) {
+    if (`$protectedItem -eq `$null) {
         throw "VM not found: `$targetVm"
     }
     & `$writeLog "SUCCESS | ASR | FindProtectedItem | vm=`$targetVm"
@@ -322,10 +322,9 @@ try {
                 `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
                 & `$writeLog "SUCCESS | ASR | RestoreCompleted"
             }
-        }
     }
 
-    if ((-not `$WhatIf)) {
+    if (`$WhatIf -eq `$false) {
         `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
         `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
         `$toList = `$emailConfig.to.Split(',')
@@ -334,7 +333,8 @@ try {
 
         Send-MailMessage -SmtpServer `$emailConfig.smtpServer -Port `$emailConfig.port -UseSsl -Credential `$cred -From `$emailConfig.username -To `$toList -Subject "[DRILL] `$targetVm step `$step" -Body `$body -Encoding UTF8
         & `$writeLog "SUCCESS | Email | NotificationSent"
-    } else {
+    }
+    else {
         & `$writeLog "INFO | Email | WhatIfMode"
     }
 
@@ -508,7 +508,7 @@ try {
     `$protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer `$container |
         Where-Object { `$_.FriendlyName -eq `$targetVm }
 
-    if ((-not `$protectedItem)) {
+    if (`$protectedItem -eq `$null) {
         throw "VM not found in protection container: $targetVm"
     }
     Write-Log "[OK] Protected item found: $targetVm"
@@ -588,7 +588,7 @@ try {
         }
     }
 
-    if ((-not `$WhatIf)) {
+    if (-not `$WhatIf) {
         `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
         `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
         `$toList = `$emailConfig.to.Split(',')
