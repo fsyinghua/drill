@@ -226,48 +226,30 @@ ErrorActionPreference = "Stop"
 
 New-Item -ItemType File -Path `$tempLogFile -Force | Out-Null
 
-`$logLine = { param([string]`$Line)
+`$writeLog = { `$msg = `$args[0]
     `$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff'
-    "`$timestamp | [`$targetVm] `$Line" | Out-File -FilePath `$tempLogFile -Encoding UTF8 -Append
-    [Console]::WriteLine("[$targetVm] `$Line")
+    "`$timestamp | [`$targetVm] `$msg" | Out-File -FilePath `$tempLogFile -Encoding UTF8 -Append
+    [Console]::WriteLine("[$targetVm] `$msg")
     [Console]::Out.Flush()
 }
 
-`$retryCmd = { param([scriptblock]`$Sb, [int]`$Retries, [int]`$Delay, [string]`$OpName)
-    `$attempts = 1
-    while (`$attempts -le `$Retries) {
-        try {
-            & `$Sb
-            return
-        }
-        catch {
-            & `$logLine -Line "RETRY | `$OpName failed (attempt `$attempts/`$Retries): `$(`$_.Exception.Message)"
-            if (`$attempts -lt `$Retries) {
-                Start-Sleep -Seconds `$Delay
-            }
-            `$attempts++
-        }
-    }
-    throw
-}
-
-& `$logLine -Line "INFO | Main | StartJob | step=`$step"
+& `$writeLog "INFO | Main | StartJob | step=`$step"
 
 try {
     Import-Module Az.RecoveryServices -ErrorAction Stop
-    & `$logLine -Line "SUCCESS | Azure | ImportModule | Az.RecoveryServices"
+    & `$writeLog "SUCCESS | Azure | ImportModule | Az.RecoveryServices"
 
     Select-AzSubscription -SubscriptionId `$vmConfig.subscriptionId -ErrorAction Stop
-    & `$logLine -Line "SUCCESS | Azure | SelectSubscription | subscriptionId=`$($vmConfig.subscriptionId)"
+    & `$writeLog "SUCCESS | Azure | SelectSubscription | subscriptionId=`$($vmConfig.subscriptionId)"
 
     `$vault = Get-AzRecoveryServicesVault -Name `$vmConfig.vaultName -ResourceGroupName `$vmConfig.resourceGroup -ErrorAction Stop
-    & `$logLine -Line "SUCCESS | Azure | ConnectVault | vault=`$($vmConfig.vaultName)"
+    & `$writeLog "SUCCESS | Azure | ConnectVault | vault=`$($vmConfig.vaultName)"
 
     `$vaultSettingsDir = Join-Path `$env:TEMP "vault-settings-$(New-Guid)"
     New-Item -ItemType Directory -Force -Path `$vaultSettingsDir | Out-Null
     `$vaultSettingsFile = Get-AzRecoveryServicesVaultSettingsFile -Vault `$vault -Path `$vaultSettingsDir -ErrorAction Stop
     Import-AzRecoveryServicesAsrVaultSettingsFile -Path `$vaultSettingsFile.FilePath -ErrorAction Stop
-    & `$logLine -Line "SUCCESS | Azure | ImportVaultSettings"
+    & `$writeLog "SUCCESS | Azure | ImportVaultSettings"
 
     `$container = Get-AzRecoveryServicesAsrFabric -Name `$vmConfig.fabricName |
         Get-AzRecoveryServicesAsrProtectionContainer -Name `$vmConfig.containerName
@@ -278,85 +260,67 @@ try {
     if (-not `$protectedItem) {
         throw "VM not found: `$targetVm"
     }
-    & `$logLine -Line "SUCCESS | ASR | FindProtectedItem | vm=`$targetVm"
+    & `$writeLog "SUCCESS | ASR | FindProtectedItem | vm=`$targetVm"
 
     switch (`$step) {
         1 {
             if (`$WhatIf) {
-                & `$logLine -Line "INFO | ASR | Failover | Command: Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer"
+                & `$writeLog "INFO | ASR | Failover | Command: Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer"
             } else {
-                & `$retryCmd -Sb {
-                    Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer
-                } -Retries `$MaxRetries -Delay `$RetryDelay -OpName "Failover"
-                & `$logLine -Line "RUNNING | ASR | StartFailoverJob | Command: Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
+                & `$writeLog "RUNNING | ASR | StartFailoverJob | Command: Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
                 `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer
                 `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-                & `$logLine -Line "SUCCESS | ASR | FailoverCompleted"
+                & `$writeLog "SUCCESS | ASR | FailoverCompleted"
             }
         }
         2 {
             if (`$WhatIf) {
-                & `$logLine -Line "INFO | ASR | CommitFailover | Command: Start-AzRecoveryServicesAsrCommitFailoverJob"
+                & `$writeLog "INFO | ASR | CommitFailover | Command: Start-AzRecoveryServicesAsrCommitFailoverJob"
             } else {
-                & `$retryCmd -Sb {
-                    Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
-                } -Retries `$MaxRetries -Delay `$RetryDelay -OpName "CommitFailover"
-                & `$logLine -Line "RUNNING | ASR | StartCommitFailoverJob"
+                & `$writeLog "RUNNING | ASR | StartCommitFailoverJob"
                 `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
                 `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-                & `$logLine -Line "SUCCESS | ASR | CommitCompleted"
+                & `$writeLog "SUCCESS | ASR | CommitCompleted"
             }
         }
         3 {
             if (`$WhatIf) {
-                & `$logLine -Line "INFO | ASR | Reprotect | Command: Start-AzRecoveryServicesAsrReprotectJob"
+                & `$writeLog "INFO | ASR | Reprotect | Command: Start-AzRecoveryServicesAsrReprotectJob"
             } else {
-                & `$retryCmd -Sb {
-                    Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
-                } -Retries `$MaxRetries -Delay `$RetryDelay -OpName "Reprotect"
-                & `$logLine -Line "RUNNING | ASR | StartReprotectJob"
+                & `$writeLog "RUNNING | ASR | StartReprotectJob"
                 `$job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
                 `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-                & `$logLine -Line "SUCCESS | ASR | ReprotectCompleted"
+                & `$writeLog "SUCCESS | ASR | ReprotectCompleted"
             }
         }
         4 {
             if (`$WhatIf) {
-                & `$logLine -Line "INFO | ASR | Failback | Command: Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
+                & `$writeLog "INFO | ASR | Failback | Command: Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer"
             } else {
-                & `$retryCmd -Sb {
-                    Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer
-                } -Retries `$MaxRetries -Delay `$RetryDelay -OpName "Failback"
-                & `$logLine -Line "RUNNING | ASR | StartFailbackJob"
+                & `$writeLog "RUNNING | ASR | StartFailbackJob"
                 `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer
                 `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-                & `$logLine -Line "SUCCESS | ASR | FailbackCompleted"
+                & `$writeLog "SUCCESS | ASR | FailbackCompleted"
             }
         }
         5 {
             if (`$WhatIf) {
-                & `$logLine -Line "INFO | ASR | CommitFailback | Command: Start-AzRecoveryServicesAsrCommitFailoverJob"
+                & `$writeLog "INFO | ASR | CommitFailback | Command: Start-AzRecoveryServicesAsrCommitFailoverJob"
             } else {
-                & `$retryCmd -Sb {
-                    Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
-                } -Retries `$MaxRetries -Delay `$RetryDelay -OpName "CommitFailback"
-                & `$logLine -Line "RUNNING | ASR | StartCommitFailbackJob"
+                & `$writeLog "RUNNING | ASR | StartCommitFailbackJob"
                 `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
                 `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-                & `$logLine -Line "SUCCESS | ASR | CommitFailbackCompleted"
+                & `$writeLog "SUCCESS | ASR | CommitFailbackCompleted"
             }
         }
         6 {
             if (`$WhatIf) {
-                & `$logLine -Line "INFO | ASR | RestoreReprotect | Command: Start-AzRecoveryServicesAsrReprotectJob"
+                & `$writeLog "INFO | ASR | RestoreReprotect | Command: Start-AzRecoveryServicesAsrReprotectJob"
             } else {
-                & `$retryCmd -Sb {
-                    Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
-                } -Retries `$MaxRetries -Delay `$RetryDelay -OpName "RestoreReprotect"
-                & `$logLine -Line "RUNNING | ASR | StartRestoreReprotectJob"
+                & `$writeLog "RUNNING | ASR | StartRestoreReprotectJob"
                 `$job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
                 `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
-                & `$logLine -Line "SUCCESS | ASR | RestoreCompleted"
+                & `$writeLog "SUCCESS | ASR | RestoreCompleted"
             }
         }
     }
@@ -369,15 +333,15 @@ try {
         `$body = "Operation completed for `$targetVm (step `$step)`nTimestamp: `$(Get-Date)"
 
         Send-MailMessage -SmtpServer `$emailConfig.smtpServer -Port `$emailConfig.port -UseSsl -Credential `$cred -From `$emailConfig.username -To `$toList -Subject "[DRILL] `$targetVm step `$step" -Body `$body -Encoding UTF8
-        & `$logLine -Line "SUCCESS | Email | NotificationSent"
+        & `$writeLog "SUCCESS | Email | NotificationSent"
     } else {
-        & `$logLine -Line "INFO | Email | WhatIfMode"
+        & `$writeLog "INFO | Email | WhatIfMode"
     }
 
-    & `$logLine -Line "SUCCESS | Main | JobCompleted"
+    & `$writeLog "SUCCESS | Main | JobCompleted"
 }
 catch {
-    & `$logLine -Line "FAILED | Main | JobFailed | Error: `$(`$_.Exception.Message)"
+    & `$writeLog "FAILED | Main | JobFailed | Error: `$(`$_.Exception.Message)"
     exit 1
 }
 "@
@@ -518,34 +482,6 @@ catch {
     Get-LogSummary | Out-File -FilePath "$($script:LogFile).summary.txt" -Encoding UTF8
 
     exit 0
-}
-
-function Invoke-WithRetry {
-    param(
-        `$ScriptBlock,
-        [int]`$MaxRetries = 3,
-        [int]`$RetryDelay = 5,
-        [string]`$OperationName = "Operation"
-    )
-
-    `$attempt = 1
-    `$lastError = `$null
-
-    while (`$attempt -le `$MaxRetries) {
-        try {
-            `$result = & `$ScriptBlock
-            return `$result
-        }
-        catch {
-            `$lastError = `$_
-            Write-Log "[ERROR] `$OperationName failed (attempt `$attempt/`$MaxRetries): `$(`$_.Exception.Message)"
-            if (`$attempt -lt `$MaxRetries) {
-                Start-Sleep -Seconds `$RetryDelay
-            }
-            `$attempt++
-        }
-    }
-    throw " $OperationName failed after `$MaxRetries attempts"
 }
 
 Write-Log "[START] Step `$step for `$targetVm"
