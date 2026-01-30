@@ -267,10 +267,9 @@ switch ($step) {
 
             if (-not $pcm) {
                 Write-Log "[WARNING] Protection container mapping not found. Using default parameters."
-                Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary"
+                Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem"
                 $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                    -ReplicationProtectedItem $protectedItem `
-                    -Direction RecoveryToPrimary
+                    -ReplicationProtectedItem $protectedItem
             } else {
                 Write-Log "[INFO] Using protection container mapping: $($pcm.Name)"
                 $logStorageId = $vmConfig.logStorageAccountId
@@ -325,10 +324,9 @@ switch ($step) {
 
             if (-not $pcm) {
                 Write-Log "[WARNING] Protection container mapping not found. Using default parameters."
-                Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary"
+                Write-Log "[CMD] Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem"
                 $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                    -ReplicationProtectedItem $protectedItem `
-                    -Direction RecoveryToPrimary
+                    -ReplicationProtectedItem $protectedItem
             } else {
                 Write-Log "[INFO] Using protection container mapping: $($pcm.Name)"
                 $logStorageId = $vmConfig.logStorageAccountId
@@ -539,10 +537,9 @@ foreach ($targetVm in $vmList) {
 
                 if (-not $pcm) {
                     Write-Warning "Protection container mapping not found. Using default parameters."
-                    Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary" -ForegroundColor Magenta
+                    Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem" -ForegroundColor Magenta
                     $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                        -ReplicationProtectedItem $protectedItem `
-                        -Direction RecoveryToPrimary
+                        -ReplicationProtectedItem $protectedItem
                 } else {
                     Write-Host "[INFO] : Using protection container mapping: $($pcm.Name)" -ForegroundColor Cyan
                     $logStorageId = $vmConfig.logStorageAccountId
@@ -596,10 +593,9 @@ foreach ($targetVm in $vmList) {
 
                 if (-not $pcm) {
                     Write-Warning "Protection container mapping not found. Using default parameters."
-                    Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary" -ForegroundColor Magenta
+                    Write-Host "[CMD] : Update-AzRecoveryServicesAsrProtectionDirection -ReplicationProtectedItem `$protectedItem" -ForegroundColor Magenta
                     $job = Update-AzRecoveryServicesAsrProtectionDirection `
-                        -ReplicationProtectedItem $protectedItem `
-                        -Direction RecoveryToPrimary
+                        -ReplicationProtectedItem $protectedItem
                 } else {
                     Write-Host "[INFO] : Using protection container mapping: $($pcm.Name)" -ForegroundColor Cyan
                     $logStorageId = $vmConfig.logStorageAccountId
