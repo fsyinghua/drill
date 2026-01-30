@@ -196,13 +196,31 @@ Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
     Write-Host ""
     Write-Host "[MONITOR] All jobs started. Waiting for completion..." -ForegroundColor Cyan
+
+    $stepName = @("","Failover (Primary→Recovery)","Commit Failover","Reprotect","Failback (Recovery→Primary)","Commit Failback","Reprotect Restore")[$step]
+    $stepCmd = @("",
+        "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer",
+        "Start-AzRecoveryServicesAsrCommitFailoverJob",
+        "Start-AzRecoveryServicesAsrReprotectJob",
+        "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer",
+        "Start-AzRecoveryServicesAsrCommitFailoverJob",
+        "Start-AzRecoveryServicesAsrReprotectJob")[$step]
+
+    Write-Host "Step $step`: $stepName" -ForegroundColor White
+    Write-Host "Cmd : $stepCmd" -ForegroundColor DarkGray
     Write-Host ""
 
+    $firstRun = $true
     $running = $true
     while ($running) {
         $running = $false
         $completed = 0
         $failed = 0
+
+        if (-not $firstRun) {
+            Write-Host ""
+        }
+        $firstRun = $false
 
         foreach ($item in $jobs) {
             $job = $item.Job
@@ -223,14 +241,7 @@ Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
             }
 
             $statusColor = if ($status -eq "DONE") { "Green" } elseif ($status -eq "FAILED") { "Red" } elseif ($status -eq "RUNNING") { "Yellow" } else { "Gray" }
-
-            if ($status -eq "RUNNING") {
-                $stepName = @("","Failover (Primary→Recovery)","Commit Failover","Reprotect","Failback (Recovery→Primary)","Commit Failback","Reprotect Restore")[$step]
-                Write-Host "  [$status] $($item.Name)" -ForegroundColor $statusColor -NoNewline
-                Write-Host " -> Step $step`: $stepName" -ForegroundColor Cyan
-            } else {
-                Write-Host "  [$status] $($item.Name)" -ForegroundColor $statusColor
-            }
+            Write-Host "  [$status] $($item.Name)" -ForegroundColor $statusColor
         }
 
         if ($running) {
