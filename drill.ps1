@@ -21,7 +21,7 @@ Write-Host "[] : $($vmConfig.vaultName)" -ForegroundColor Cyan
 $vault = Get-AzRecoveryServicesVault -Name $vmConfig.vaultName -ResourceGroupName $vmConfig.resourceGroup -ErrorAction Stop
 
 Write-Host "[] ASR" -ForegroundColor Cyan
-Set-AzRecoveryServicesAsrVaultContext -Vault $vault -ErrorAction Stop
+Set-AzRecoveryServicesAsrVaultContext -Name $vmConfig.vaultName -ErrorAction Stop
 
 # 获取容器
 $container = Get-AzRecoveryServicesAsrFabric -Name $vmConfig.fabricName | 
