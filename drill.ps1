@@ -81,8 +81,46 @@ if ($Parallel -and $vmList.Count -gt 1) {
     $logDir = Join-Path $env:TEMP "drill-logs-$([guid]::NewGuid().ToString('N')[0..7])"
     New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "[EXECUTION PLAN]" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "Subscription: $($vmConfig.subscriptionId)" -ForegroundColor Gray
+    Write-Host "Vault: $($vmConfig.vaultName)" -ForegroundColor Gray
+    Write-Host "Resource Group: $($vmConfig.resourceGroup)" -ForegroundColor Gray
+    Write-Host "Fabric: $($vmConfig.fabricName)" -ForegroundColor Gray
+    Write-Host "Container: $($vmConfig.containerName)" -ForegroundColor Gray
+    Write-Host "Step: $step" -ForegroundColor Gray
+    Write-Host "WhatIf: $WhatIf" -ForegroundColor Gray
+    Write-Host "Log Directory: $logDir" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "[VMs TO PROCESS]" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+
+    $stepCmd = @("",
+        "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideAction",
+        "Start-AzRecoveryServicesAsrCommitFailoverJob",
+        "Start-AzRecoveryServicesAsrReprotectJob",
+        "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideAction",
+        "Start-AzRecoveryServicesAsrCommitFailoverJob",
+        "Start-AzRecoveryServicesAsrReprotectJob")[$step]
+
+    $executionPlan = @()
+
     foreach ($targetVm in $vmList) {
         $logFile = Join-Path $logDir "$targetVm.log"
+
+        Write-Host "VM: $targetVm" -ForegroundColor Yellow
+        Write-Host "  Command: $stepCmd" -ForegroundColor Gray
+        Write-Host "  Log File: $logFile" -ForegroundColor Gray
+        Write-Host "  Temp Script: job-$targetVm.ps1" -ForegroundColor Gray
+        Write-Host ""
+
+        $executionPlan += @{
+            VM = $targetVm
+            Command = $stepCmd
+            LogFile = $logFile
+            TempScript = "job-$targetVm.ps1"
+        }
 
         $scriptContent = @"
 ErrorActionPreference = "Stop"
@@ -258,14 +296,6 @@ Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
         $tempScript = Join-Path $logDir "job-$targetVm.ps1"
         $scriptContent | Out-File -FilePath $tempScript -Encoding UTF8
 
-        $stepCmd = @("",
-            "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideAction",
-            "Start-AzRecoveryServicesAsrCommitFailoverJob",
-            "Start-AzRecoveryServicesAsrReprotectJob",
-            "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideAction",
-            "Start-AzRecoveryServicesAsrCommitFailoverJob",
-            "Start-AzRecoveryServicesAsrReprotectJob")[$step]
-
         $job = Start-Job -ScriptBlock {
             param($ScriptPath)
             pwsh -File $ScriptPath
@@ -276,13 +306,17 @@ Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
             Job = $job
             LogFile = $logFile
         }
-
-        Write-Host "[PARALLEL] $targetVm : $stepCmd" -ForegroundColor Cyan
     }
 
     Write-Host ""
-    Write-Host "[MONITOR] All jobs started. Waiting for completion..." -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "[STARTING PARALLEL JOBS]" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "Total VMs: $($vmList.Count)"
+    Write-Host "Execution Mode: Parallel (All VMs run simultaneously)"
     Write-Host ""
+    Write-Host "[MONITOR] Job Status (updates every 1 second)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
 
     $firstRun = $true
     $running = $true
