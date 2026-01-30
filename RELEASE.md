@@ -27,14 +27,33 @@
 
 | 项目 | 值 |
 |:----|:----|
-| 当前版本 | **v1.1.3** |
-| 发布日期 | 2026-01-30 |
-| 状态 | ✅ 已发布 |
-| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.3 |
+| 当前版本 | **v1.1.4** |
+| 发布日期 | 2026-01-31 |
+| 状态 | 🔄 开发中 |
+| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.4 |
 
 ---
 
 ## 3. 版本历史
+
+### v1.1.4 (2026-01-31) - Bug修复（Cmdlet不存在问题）
+
+**状态**: 🔄 开发中
+
+**问题修复**:
+- 修复 `Start-AzRecoveryServicesAsrReverseReplicationJob` cmdlet 不存在的问题
+- 该 cmdlet 在 Azure PowerShell 模块中不存在，导致 step 3 和 step 6 执行失败
+- 添加错误检测和用户指导机制
+- 提供替代方案：`Set-AzRecoveryServicesAsrReplicationProtectedItem`（需要验证参数）
+
+**变更说明**:
+- Step 3（reprotect）和 Step 6（reprotect restore）添加了错误检测
+- 当 cmdlet 不存在时，提供清晰的错误信息和指导
+- 建议用户运行 `Get-Command -Module Az.RecoveryServices -Name *Asr*` 验证可用 cmdlet
+- 并行执行模式和串行执行模式同步修复
+
+**包含文件变更**:
+- `drill.ps1` - 移除不存在的 cmdlet 调用，添加错误处理
 
 ### v1.1.3 (2026-01-30) - 邮件通知增强
 
