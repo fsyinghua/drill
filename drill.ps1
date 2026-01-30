@@ -133,13 +133,29 @@ ErrorActionPreference = "Stop"
 `$WhatIf = `$$WhatIf
 `$logFile = "$logFile"
 
+`$operationStartTime = Get-Date
+
 New-Item -ItemType File -Path `$logFile -Force | Out-Null
 
 function Write-Log {
     param([string]`$Message)
+    `$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    `$Message = "[$timestamp] `$Message"
     `$Message | Out-File -FilePath `$logFile -Encoding UTF8 -Append
     [Console]::WriteLine(`$Message)
     [Console]::Out.Flush()
+}
+
+function Get-ElapsedTime {
+    param([DateTime]`$StartTime, [DateTime]`$EndTime)
+    `$duration = `$EndTime - `$StartTime
+    if (`$duration.TotalHours -ge 1) {
+        return "$([math]::Round(`$duration.TotalHours, 2)) hours"
+    } elseif (`$duration.TotalMinutes -ge 1) {
+        return "$([math]::Round(`$duration.TotalMinutes, 2)) minutes"
+    } else {
+        return "$([math]::Round(`$duration.TotalSeconds, 2)) seconds"
+    }
 }
 
 function Wait-AsrJob {
@@ -149,6 +165,7 @@ function Wait-AsrJob {
         throw "ASR Job was not created"
     }
 
+    `$jobStartTime = Get-Date
     Write-Log "  Job started: `$(`$Job.Name) - State: `$(`$Job.State)"
 
     `$maxWaitMinutes = 60
@@ -177,8 +194,17 @@ function Wait-AsrJob {
         throw "ASR Job failed: `$errorMsg"
     }
 
-    Write-Log "  Job completed: `$(`$Job.Name)"
-    return `$Job
+    `$jobEndTime = Get-Date
+    `$duration = `$jobEndTime - `$jobStartTime
+    `$durationText = Get-ElapsedTime -StartTime `$jobStartTime -EndTime `$jobEndTime
+
+    Write-Log "  Job completed: `$(`$Job.Name) (Duration: `$durationText)"
+    return @{
+        Job = `$Job
+        StartTime = `$jobStartTime
+        EndTime = `$jobEndTime
+        Duration = `$durationText
+    }
 }
 
 Import-Module Az.RecoveryServices -ErrorAction Stop
@@ -216,7 +242,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideAction
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
-            Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failover completed"
         }
     }
@@ -227,7 +253,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
-            Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Commit completed"
         }
     }
@@ -238,7 +264,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrReverseReplicationJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrReverseReplicationJob"
-            Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Reprotect completed"
         }
     }
@@ -249,7 +275,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideAction
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
-            Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failback completed"
         }
     }
@@ -260,7 +286,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
-            Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Commit failback completed"
         }
     }
@@ -271,7 +297,7 @@ switch (`$step) {
         } else {
             `$job = Start-AzRecoveryServicesAsrReverseReplicationJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrReverseReplicationJob"
-            Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
+            `$jobResult = Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Reprotect restore completed"
         }
     }
@@ -282,7 +308,11 @@ if (-not `$WhatIf) {
     `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
     `$toList = `$emailConfig.to.Split(',')
 
-    `$body = "Operation completed for `$targetVm (step `$step)`nTimestamp: `$(Get-Date)"
+    `$startTimeFormatted = `$operationStartTime.ToString('yyyy-MM-dd HH:mm:ss')
+    `$endTimeFormatted = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    `$totalDuration = Get-ElapsedTime -StartTime `$operationStartTime -EndTime (Get-Date)
+
+    `$body = "Operation completed for `$targetVm (step `$step)`n`nStart Time: `$startTimeFormatted`nEnd Time: `$endTimeFormatted`nDuration: `$totalDuration`n`nTimestamp: `$(Get-Date)"
 
     Send-MailMessage -SmtpServer `$emailConfig.smtpServer -Port `$emailConfig.port -UseSsl -Credential `$cred -From `$emailConfig.username -To `$toList -Subject "[DRILL] `$targetVm step `$step" -Body `$body -Encoding UTF8
     Write-Log "[EMAIL] Notification sent"
@@ -407,6 +437,8 @@ $cred = New-Object System.Management.Automation.PSCredential(
     $securePassword
 )
 
+$operationStartTime = Get-Date
+
 foreach ($targetVm in $vmList) {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "[VM] Processing: $targetVm" -ForegroundColor Cyan
@@ -422,6 +454,8 @@ foreach ($targetVm in $vmList) {
         Write-Error "VM not found: $targetVm"
         continue
     }
+
+    $vmStartTime = Get-Date
 
     switch ($step) {
         1 {
@@ -491,13 +525,16 @@ foreach ($targetVm in $vmList) {
     }
 
     if (-not $WhatIf) {
+        $vmEndTime = Get-Date
+        $vmDuration = Get-ElapsedTime -StartTime $vmStartTime -EndTime $vmEndTime
+
         $toList = $emailConfig.to.Split(',')
         Send-MailMessage -SmtpServer $emailConfig.smtpServer `
             -Port $emailConfig.port -UseSsl -Credential $cred `
             -From $emailConfig.username `
             -To $toList `
             -Subject "[DRILL] $targetVm step $step" `
-            -Body "Operation completed for $targetVm (step $step)`nTimestamp: $(Get-Date)" `
+            -Body "Operation completed for $targetVm (step $step)`n`nStart Time: $($vmStartTime.ToString('yyyy-MM-dd HH:mm:ss'))`nEnd Time: $($vmEndTime.ToString('yyyy-MM-dd HH:mm:ss'))`nDuration: $vmDuration`n`nTimestamp: $(Get-Date)" `
             -Encoding UTF8
         Write-Host "[EMAIL] : Notification sent" -ForegroundColor Cyan
     } else {
