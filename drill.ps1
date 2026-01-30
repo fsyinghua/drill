@@ -257,7 +257,7 @@ try {
     `$protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer `$container |
         Where-Object { `$_.FriendlyName -eq `$targetVm }
 
-    if (-not `$protectedItem) {
+    if ((-not `$protectedItem)) {
         throw "VM not found: `$targetVm"
     }
     & `$writeLog "SUCCESS | ASR | FindProtectedItem | vm=`$targetVm"
@@ -325,7 +325,7 @@ try {
         }
     }
 
-    if (-not `$WhatIf) {
+    if ((-not `$WhatIf)) {
         `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
         `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
         `$toList = `$emailConfig.to.Split(',')
@@ -508,7 +508,7 @@ try {
     `$protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionContainer `$container |
         Where-Object { `$_.FriendlyName -eq `$targetVm }
 
-    if (-not `$protectedItem) {
+    if ((-not `$protectedItem)) {
         throw "VM not found in protection container: $targetVm"
     }
     Write-Log "[OK] Protected item found: $targetVm"
@@ -588,7 +588,7 @@ try {
         }
     }
 
-    if (-not `$WhatIf) {
+    if ((-not `$WhatIf)) {
         `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
         `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
         `$toList = `$emailConfig.to.Split(',')
