@@ -130,7 +130,8 @@ foreach ($targetVm in $vmList) {
             -From $emailConfig.username `
             -To $emailConfig.to.Split(',') `
             -Subject "[DRILL] $targetVm step $step" `
-            -Body "Operation completed for $targetVm (step $step)`nTimestamp: $(Get-Date)"
+            -Body "Operation completed for $targetVm (step $step)`nTimestamp: $(Get-Date)" `
+            -Encoding UTF8
     } else {
         Write-Host "[WHATIF] : Send-MailMessage -Subject '[DRILL] $targetVm step $step'" -ForegroundColor Yellow
     }
