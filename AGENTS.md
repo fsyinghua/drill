@@ -145,3 +145,34 @@ Describe 'Azure Login' {
 - Azure PowerShell Docs: https://learn.microsoft.com/powershell/azure
 - Pester Best Practices: https://pester.dev/docs/best-practices
 - PSRule Guidelines: https://microsoft.github.io/PSRule/
+
+## ASR Drill Script Usage
+
+### Single VM Execution
+```powershell
+# Simulation mode
+.\drill.ps1 -vmName CA01SSEGHK -step 1 -WhatIf
+
+# Real execution
+.\drill.ps1 -vmName CA01SSEGHK -step 1
+```
+
+### Batch VM Execution
+```powershell
+# Create VM list file
+"CA01SSEGHK", "DMS15SSEGHK", "DMS16SSEGHK" | Out-File -Encoding utf8 vms.txt
+
+# Simulation mode
+.\drill.ps1 -InputFile vms.txt -step 1 -WhatIf
+
+# Real execution
+.\drill.ps1 -InputFile vms.txt -step 1
+```
+
+### Parameter Reference
+| Parameter | Description |
+|-----------|-------------|
+| `-vmName` | Single VM name to process |
+| `-InputFile` | Path to text file with VM names (one per line) |
+| `-step` | Drill step (1-6) |
+| `-WhatIf` | Preview mode without execution |
