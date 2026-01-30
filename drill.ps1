@@ -98,7 +98,7 @@ switch (`$step) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer
+            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failover completed"
@@ -109,7 +109,7 @@ switch (`$step) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
+            `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Commit completed"
@@ -120,7 +120,7 @@ switch (`$step) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
+            `$job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Reprotect completed"
@@ -131,7 +131,7 @@ switch (`$step) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer
+            `$job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem `$protectedItem -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer
             Write-Log "[RUN] Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Failback completed"
@@ -142,7 +142,7 @@ switch (`$step) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrCommitFailoverJob"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject `$protectedItem
+            `$job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrCommitFailoverJob"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Commit failback completed"
@@ -153,7 +153,7 @@ switch (`$step) {
             Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject `$protectedItem
+            `$job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem `$protectedItem
             Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
             `$job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Reprotect restore completed"
@@ -316,7 +316,7 @@ foreach ($targetVm in $vmList) {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer" -ForegroundColor Yellow
             } else {
-                $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject $protectedItem `
+                $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem $protectedItem `
                     -Direction PrimaryToRecovery `
                     -PerformSourceSideActions `
                     -ShutDownSourceServer
@@ -329,7 +329,7 @@ foreach ($targetVm in $vmList) {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Yellow
             } else {
-                $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject $protectedItem
+                $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem $protectedItem
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Cyan
                 $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Commit completed" -ForegroundColor Green
@@ -339,7 +339,7 @@ foreach ($targetVm in $vmList) {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Yellow
             } else {
-                $job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject $protectedItem
+                $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
                 $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Reprotect completed" -ForegroundColor Green
@@ -349,7 +349,7 @@ foreach ($targetVm in $vmList) {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer" -ForegroundColor Yellow
             } else {
-                $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ProtectionObject $protectedItem `
+                $job = Start-AzRecoveryServicesAsrUnplannedFailoverJob -ReplicationProtectedItem $protectedItem `
                     -Direction RecoveryToPrimary `
                     -PerformSourceSideActions `
                     -ShutDownSourceServer
@@ -362,7 +362,7 @@ foreach ($targetVm in $vmList) {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Yellow
             } else {
-                $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ProtectionObject $protectedItem
+                $job = Start-AzRecoveryServicesAsrCommitFailoverJob -ReplicationProtectedItem $protectedItem
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrCommitFailoverJob" -ForegroundColor Cyan
                 $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Commit failback completed" -ForegroundColor Green
@@ -372,7 +372,7 @@ foreach ($targetVm in $vmList) {
             if ($WhatIf) {
                 Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Yellow
             } else {
-                $job = Start-AzRecoveryServicesAsrReprotectJob -ProtectionObject $protectedItem
+                $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
                 Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
                 $job | Wait-AzRecoveryServicesAsrJob -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Reprotect restore completed" -ForegroundColor Green
