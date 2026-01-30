@@ -13,7 +13,7 @@ $emailConfig = Read-Ini email-config.ini
 
 Import-Module Az.RecoveryServices
 
-# 
+# 邮箱配置
 Write-Host "[] : $($vmConfig.subscriptionId)" -ForegroundColor Cyan
 Select-AzSubscription -SubscriptionId $vmConfig.subscriptionId -ErrorAction Stop
 
@@ -23,7 +23,7 @@ $vault = Get-AzRecoveryServicesVault -Name $vmConfig.vaultName -ResourceGroupNam
 Write-Host "[] ASR" -ForegroundColor Cyan
 Set-AzRecoveryServicesAsrVaultContext -Vault $vault -ErrorAction Stop
 
-# 
+# 获取容器
 $container = Get-AzRecoveryServicesAsrFabric -Name $vmConfig.fabricName | 
     Get-AzRecoveryServicesAsrProtectionContainer -Name $vmConfig.containerName
 
@@ -33,7 +33,7 @@ $protectedItem = Get-AzRecoveryServicesAsrReplicationProtectedItem -ProtectionCo
 
 
 if (-not $protectedItem) {
-    Write-Error ": $vmName"
+    Write-Error "未找到虚拟机: $vmName"
     exit 1
 }
 
@@ -104,5 +104,5 @@ if (-not $WhatIf) {
         -Subject "[DRILL] $vmName step $step" `
         -Body "Operation completed for $vmName (step $step)\nTimestamp: $(Get-Date)"
 } else {
-    Write-Host "[] : Send-MailMessage -SmtpServer $($emailConfig.smtpServer) -Port $($emailConfig.port) -From $($emailConfig.username) -Subject '[DRILL] $vmName step $step' -ForegroundColor Yellow
+    Write-Host "[WHATIF] : Send-MailMessage -SmtpServer $($emailConfig.smtpServer) -Port $($emailConfig.port) -From $($emailConfig.username) -Subject '[DRILL] $vmName step $step'" -ForegroundColor Yellow
 }
