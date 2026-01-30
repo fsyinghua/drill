@@ -24,5 +24,12 @@
 .\drill.ps1 -InputFile vms.txt -step 1 -Parallel -WhatIf
 ```
 
+## Parallel Execution Benefits
+- All VMs execute simultaneously
+- Each VM runs in isolated process
+- Independent Azure context per VM
+- Real-time status monitoring
+- Separate log files for each VM
+
 ## See Also
 - Full guide: [ASR_Drill_Guide.md](ASR_Drill_Guide.md)
