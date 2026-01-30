@@ -325,8 +325,8 @@ try {
     }
 
     if (`$WhatIf -eq `$false) {
-        `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
-        `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
+        `$secPwd = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
+        `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$secPwd)
         `$toList = `$emailConfig.to.Split(',')
 
         `$body = "Operation completed for `$targetVm (step `$step)`nTimestamp: `$(Get-Date)"
@@ -589,8 +589,8 @@ try {
     }
 
     if (`$WhatIf -eq `$false) {
-        `$securePassword = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
-        `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$securePassword)
+        `$secPwd = ConvertTo-SecureString `$emailConfig.password -AsPlainText -Force
+        `$cred = New-Object System.Management.Automation.PSCredential(`$emailConfig.username, `$secPwd)
         `$toList = `$emailConfig.to.Split(',')
 
         `$body = "Operation completed for `$targetVm (step `$step)`nTimestamp: $(Get-Date)"
