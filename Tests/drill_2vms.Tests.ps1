@@ -3,7 +3,7 @@ Describe '2-VM Disaster Recovery Simulation' {
     $steps = 1..6
 
     BeforeAll {
-        # 验证核心脚本存在
+        # 
         $drillPath = Join-Path $PSScriptRoot '..\drill.ps1'
         $true | Should -Be (Test-Path $drillPath)
     }
@@ -19,10 +19,10 @@ Describe '2-VM Disaster Recovery Simulation' {
 
         $output = & $drillPath $server $step -WhatIf 2>&1
 
-        # 验证模拟标识
-        $output -match '\[模拟\]' | Should -Be $true
+        # 
+        $output -match '\[\]' | Should -Be $true
 
-        # 验证关键命令存在
+        # 
         $cmdlets = @(
             'Start-AzRecoveryServicesAsrUnplannedFailoverJob',
             'Start-AzRecoveryServicesAsrCommitFailoverJob',
@@ -31,7 +31,7 @@ Describe '2-VM Disaster Recovery Simulation' {
         
         $output -match $cmdlets | Should -Be $true
 
-        # 验证邮件模拟输出
+        # 
         $output -match 'Send-MailMessage' | Should -Be $true
     }
 
