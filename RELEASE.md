@@ -27,14 +27,30 @@
 
 | 项目 | 值 |
 |:----|:----|
-| 当前版本 | **v1.1.0** |
+| 当前版本 | **v1.1.1** |
 | 发布日期 | 2026-01-30 |
 | 状态 | ✅ 已发布 |
-| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.0 |
+| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.1 |
 
 ---
 
 ## 3. 版本历史
+
+### v1.1.1 (2026-01-30) - Bug修复
+
+**状态**: ✅ 已发布
+
+**修复**:
+- 修复 Wait-AsrJob 函数超时和错误处理问题
+- 添加 60 分钟超时机制，防止无限等待
+- 添加 try-catch 捕获作业状态刷新错误
+- 支持多种成功状态（Completed 和 Succeeded）
+- 显示作业执行进度和已用时间
+- 修正函数调用语法（从管道改为参数传递）
+- 并行执行脚本同步添加 Wait-AsrJob 函数
+
+**包含文件变更**:
+- `drill.ps1` - Wait-AsrJob 函数增强
 
 ### v1.1.0 (2026-01-30) - 并行执行功能
 
