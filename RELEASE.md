@@ -27,18 +27,37 @@
 
 | 项目 | 值 |
 |:----|:----|
-| 当前版本 | **v1.1.4** |
+| 当前版本 | **v1.1.5** |
 | 发布日期 | 2026-01-31 |
 | 状态 | 🔄 开发中 |
-| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.4 |
+| GitHub Release | https://github.com/fsyinghua/drill/releases/tag/v1.1.5 |
 
 ---
 
 ## 3. 版本历史
 
-### v1.1.4 (2026-01-31) - Bug修复（正确的Reprotect命令）
+### v1.1.5 (2026-01-31) - Bug修复（参数集冲突）
 
 **状态**: 🔄 开发中
+
+**问题修复**:
+- 修复 `-Direction` 和 `-ProtectionContainerMapping` 参数集冲突问题
+- 这两个参数不能同时使用，属于不同的参数集
+- ByRPIObject 参数集：`-ReplicationProtectedItem`, `-Direction`
+- AzureToAzure 参数集：`-ProtectionContainerMapping`, `-ReplicationProtectedItem`
+
+**变更说明**:
+- 未找到 ProtectionContainerMapping 时：使用 `-Direction RecoveryToPrimary`
+- 找到 ProtectionContainerMapping 时：使用 `-ProtectionContainerMapping` (不含 `-Direction`)
+- 修复 4 处：串行 Step 3/6，并行 Step 3/6
+- 添加命令打印功能，执行前显示完整命令便于调试
+
+**包含文件变更**:
+- `drill.ps1` - 分离参数集使用，添加命令显示
+
+### v1.1.4 (2026-01-31) - Bug修复（正确的Reprotect命令）
+
+**状态**: ✅ 已发布
 
 **问题修复**:
 - 修复 Step 3 和 Step 6 的 reprotect 命令问题
