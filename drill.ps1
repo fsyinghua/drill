@@ -19,7 +19,8 @@ Select-AzSubscription -SubscriptionId $vmConfig.subscriptionId -ErrorAction Stop
 Write-Host "[ASR] : $($vmConfig.vaultName)" -ForegroundColor Cyan
 $vault = Get-AzRecoveryServicesVault -Name $vmConfig.vaultName -ResourceGroupName $vmConfig.resourceGroup -ErrorAction Stop
 
-$vaultSettingsFile = Get-AzRecoveryServicesVaultSettingsFile -Vault $vault -ErrorAction Stop
+$vaultSettingsPath = Join-Path $env:TEMP "vault-settings-$($vmConfig.vaultName).xml"
+$vaultSettingsFile = Get-AzRecoveryServicesVaultSettingsFile -Vault $vault -Path $vaultSettingsPath -ErrorAction Stop
 Import-AzRecoveryServicesAsrVaultSettingsFile -Path $vaultSettingsFile.FilePath -ErrorAction Stop
 
 # Get protection container
