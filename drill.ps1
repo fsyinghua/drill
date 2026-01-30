@@ -180,6 +180,14 @@ Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
         $tempScript = Join-Path $logDir "job-$targetVm.ps1"
         $scriptContent | Out-File -FilePath $tempScript -Encoding UTF8
 
+        $stepCmd = @("",
+            "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer",
+            "Start-AzRecoveryServicesAsrCommitFailoverJob",
+            "Start-AzRecoveryServicesAsrReprotectJob",
+            "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer",
+            "Start-AzRecoveryServicesAsrCommitFailoverJob",
+            "Start-AzRecoveryServicesAsrReprotectJob")[$step]
+
         $job = Start-Job -ScriptBlock {
             param($ScriptPath)
             pwsh -File $ScriptPath
@@ -191,23 +199,11 @@ Write-Log "[END] `$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
             LogFile = $logFile
         }
 
-        Write-Host "[PARALLEL] Started: $targetVm (Job ID: $($job.Id))" -ForegroundColor Cyan
+        Write-Host "[PARALLEL] $targetVm : $stepCmd" -ForegroundColor Cyan
     }
 
     Write-Host ""
     Write-Host "[MONITOR] All jobs started. Waiting for completion..." -ForegroundColor Cyan
-
-    $stepName = @("","Failover (Primary→Recovery)","Commit Failover","Reprotect","Failback (Recovery→Primary)","Commit Failback","Reprotect Restore")[$step]
-    $stepCmd = @("",
-        "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideActions -ShutDownSourceServer",
-        "Start-AzRecoveryServicesAsrCommitFailoverJob",
-        "Start-AzRecoveryServicesAsrReprotectJob",
-        "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideActions -ShutDownSourceServer",
-        "Start-AzRecoveryServicesAsrCommitFailoverJob",
-        "Start-AzRecoveryServicesAsrReprotectJob")[$step]
-
-    Write-Host "Step $step`: $stepName" -ForegroundColor White
-    Write-Host "Cmd : $stepCmd" -ForegroundColor DarkGray
     Write-Host ""
 
     $firstRun = $true
