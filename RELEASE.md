@@ -36,24 +36,31 @@
 
 ## 3. 版本历史
 
-### v1.1.4 (2026-01-31) - Bug修复（Cmdlet不存在问题）
+### v1.1.4 (2026-01-31) - Bug修复（正确的Reprotect命令）
 
 **状态**: 🔄 开发中
 
 **问题修复**:
-- 修复 `Start-AzRecoveryServicesAsrReverseReplicationJob` cmdlet 不存在的问题
-- 该 cmdlet 在 Azure PowerShell 模块中不存在，导致 step 3 和 step 6 执行失败
-- 添加错误检测和用户指导机制
-- 提供替代方案：`Set-AzRecoveryServicesAsrReplicationProtectedItem`（需要验证参数）
+- 修复 Step 3 和 Step 6 的 reprotect 命令问题
+- 原来的命令 `Start-AzRecoveryServicesAsrReverseReplicationJob` 已弃用
+- 使用正确的命令 `Start-AzRecoveryServicesAsrReprotectJob` 替换
+- 感谢 DeepSeek 提供正确的命令信息
 
 **变更说明**:
-- Step 3（reprotect）和 Step 6（reprotect restore）添加了错误检测
-- 当 cmdlet 不存在时，提供清晰的错误信息和指导
-- 建议用户运行 `Get-Command -Module Az.RecoveryServices -Name *Asr*` 验证可用 cmdlet
-- 并行执行模式和串行执行模式同步修复
+- 串行执行模式 Step 3：使用 `Start-AzRecoveryServicesAsrReprotectJob`
+- 串行执行模式 Step 6：使用 `Start-AzRecoveryServicesAsrReprotectJob`
+- 并行执行模式 Step 3：使用 `Start-AzRecoveryServicesAsrReprotectJob`
+- 并行执行模式 Step 6：使用 `Start-AzRecoveryServicesAsrReprotectJob`
+- 更新执行计划显示，使用正确的命令名称
+- 移除了临时的错误检测代码
 
 **包含文件变更**:
-- `drill.ps1` - 移除不存在的 cmdlet 调用，添加错误处理
+- `drill.ps1` - 替换所有 reprotect 命令为正确的 `Start-AzRecoveryServicesAsrReprotectJob`
+
+**参考信息**:
+- 旧命令（已弃用）: `Start-AzRecoveryServicesAsrReverseReplicationJob`
+- 新命令（应使用）: `Start-AzRecoveryServicesAsrReprotectJob`
+- 作用: 重新保护/反向复制操作
 
 ### v1.1.3 (2026-01-30) - 邮件通知增强
 

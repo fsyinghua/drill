@@ -99,10 +99,10 @@ if ($Parallel -and $vmList.Count -gt 1) {
     $stepCmd = @("",
         "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideAction",
         "Start-AzRecoveryServicesAsrCommitFailoverJob",
-        "Set-AzRecoveryServicesAsrReplicationProtectedItem (reprotect - requires verification)",
+        "Start-AzRecoveryServicesAsrReprotectJob",
         "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideAction",
         "Start-AzRecoveryServicesAsrCommitFailoverJob",
-        "Set-AzRecoveryServicesAsrReplicationProtectedItem (reprotect restore - requires verification)")[$step]
+        "Start-AzRecoveryServicesAsrReprotectJob")[$step]
 
     $executionPlan = @()
 
@@ -259,14 +259,13 @@ switch ($step) {
     }
     3 {
         if ($WhatIf) {
-            Write-Log "[WHATIF] Set-AzRecoveryServicesAsrReplicationProtectedItem (reprotect operation)"
-            Write-Log "[INFO] : Please verify available ASR cmdlets"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
             Start-Sleep -Milliseconds 500
         } else {
-            Write-Log "[ERROR] Step 3 reprotect requires manual verification"
-            Write-Log "[INFO] : Run 'Get-Command -Module Az.RecoveryServices -Name *Asr*' to list available cmdlets"
-            $jobResult = @{ Success = $false; Message = "Reprotect operation requires manual verification" }
-            Write-Log "[DONE] Reprotect step requires manual verification"
+            $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
+            $jobResult = Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
+            Write-Log "[DONE] Reprotect completed"
         }
     }
     4 {
@@ -293,14 +292,13 @@ switch ($step) {
     }
     6 {
         if ($WhatIf) {
-            Write-Log "[WHATIF] Set-AzRecoveryServicesAsrReplicationProtectedItem (reprotect restore operation)"
-            Write-Log "[INFO] : Please verify available ASR cmdlets"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
             Start-Sleep -Milliseconds 500
         } else {
-            Write-Log "[ERROR] Step 6 reprotect restore requires manual verification"
-            Write-Log "[INFO] : Run 'Get-Command -Module Az.RecoveryServices -Name *Asr*' to list available cmdlets"
-            $jobResult = @{ Success = $false; Message = "Reprotect restore operation requires manual verification" }
-            Write-Log "[DONE] Reprotect restore step requires manual verification"
+            $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
+            $jobResult = Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
+            Write-Log "[DONE] Reprotect restore completed"
         }
     }
 }
@@ -483,30 +481,13 @@ foreach ($targetVm in $vmList) {
             }
         }
         3 {
-            $reprotectCmdlet = "Set-AzRecoveryServicesAsrReplicationProtectedItem"
-            $reprotectExists = $false
-            try {
-                $reprotectExists = Get-Command $reprotectCmdlet -ErrorAction SilentlyContinue | Where-Object { $_.ParameterSets.Count -gt 0 }
-            } catch {
-                Write-Warning "Cmdlet '$reprotectCmdlet' not found. Please verify available ASR cmdlets."
-            }
-
             if ($WhatIf) {
-                Write-Host "[WHATIF] : $reprotectCmdlet (reprotect operation)" -ForegroundColor Yellow
-                Write-Host "[INFO] : Please run 'Get-Command -Module Az.RecoveryServices -Name *Asr*' to verify available cmdlets" -ForegroundColor Yellow
+                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Yellow
             } else {
-                if (-not $reprotectExists) {
-                    Write-Error "Reprotect cmdlet not found. The reprotect/reverse replication operation requires a valid Azure PowerShell cmdlet."
-                    Write-Host "[ERROR] : Step 3 requires a valid reprotect cmdlet. Please verify your Azure PowerShell installation." -ForegroundColor Red
-                    Write-Host "[INFO] : Run 'Get-Command -Module Az.RecoveryServices -Name *Asr*' to list available ASR cmdlets" -ForegroundColor Yellow
-                    Write-Host "[INFO] : If 'Set-AzRecoveryServicesAsrReplicationProtectedItem' is available, it may be used for reprotect operations" -ForegroundColor Yellow
-                    exit 1
-                }
-
-                Write-Host "[INFO] : Using $reprotectCmdlet for reprotect operation" -ForegroundColor Cyan
-                Write-Host "[TODO] : Please verify the correct parameters for reprotect operation" -ForegroundColor Yellow
-
-                Write-Host "[DONE] : Reprotect step requires manual verification" -ForegroundColor Green
+                $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
+                Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
+                Write-Host "[DONE] : Reprotect completed" -ForegroundColor Green
             }
         }
         4 {
@@ -532,30 +513,13 @@ foreach ($targetVm in $vmList) {
             }
         }
         6 {
-            $reprotectCmdlet = "Set-AzRecoveryServicesAsrReplicationProtectedItem"
-            $reprotectExists = $false
-            try {
-                $reprotectExists = Get-Command $reprotectCmdlet -ErrorAction SilentlyContinue | Where-Object { $_.ParameterSets.Count -gt 0 }
-            } catch {
-                Write-Warning "Cmdlet '$reprotectCmdlet' not found. Please verify available ASR cmdlets."
-            }
-
             if ($WhatIf) {
-                Write-Host "[WHATIF] : $reprotectCmdlet (reprotect restore operation)" -ForegroundColor Yellow
-                Write-Host "[INFO] : Please run 'Get-Command -Module Az.RecoveryServices -Name *Asr*' to verify available cmdlets" -ForegroundColor Yellow
+                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Yellow
             } else {
-                if (-not $reprotectExists) {
-                    Write-Error "Reprotect cmdlet not found. The reprotect/restore operation requires a valid Azure PowerShell cmdlet."
-                    Write-Host "[ERROR] : Step 6 requires a valid reprotect cmdlet. Please verify your Azure PowerShell installation." -ForegroundColor Red
-                    Write-Host "[INFO] : Run 'Get-Command -Module Az.RecoveryServices -Name *Asr*' to list available ASR cmdlets" -ForegroundColor Yellow
-                    Write-Host "[INFO] : If 'Set-AzRecoveryServicesAsrReplicationProtectedItem' is available, it may be used for reprotect operations" -ForegroundColor Yellow
-                    exit 1
-                }
-
-                Write-Host "[INFO] : Using $reprotectCmdlet for reprotect restore operation" -ForegroundColor Cyan
-                Write-Host "[TODO] : Please verify the correct parameters for reprotect operation" -ForegroundColor Yellow
-
-                Write-Host "[DONE] : Reprotect restore step requires manual verification" -ForegroundColor Green
+                $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
+                Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
+                Write-Host "[DONE] : Reprotect restore completed" -ForegroundColor Green
             }
         }
     }
