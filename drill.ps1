@@ -524,7 +524,7 @@ catch {
 
 function Invoke-WithRetry {
     param(
-        [scriptblock]`$ScriptBlock,
+        `$ScriptBlock,
         [int]`$MaxRetries = 3,
         [int]`$RetryDelay = 5,
         [string]`$OperationName = "Operation"
