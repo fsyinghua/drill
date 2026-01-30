@@ -104,5 +104,5 @@ if (-not $WhatIf) {
         -Subject "[DRILL] $vmName step $step" `
         -Body "Operation completed for $vmName (step $step)\nTimestamp: $(Get-Date)"
 } else {
-    Write-Host "[] : Send-MailMessage -SmtpServer $($emailConfig.smtpServer) -Port $($emailConfig.port) -From $($emailConfig.username) -Subject "[DRILL] $vmName step $step" -ForegroundColor Yellow
+    Write-Host "[] : Send-MailMessage -SmtpServer $($emailConfig.smtpServer) -Port $($emailConfig.port) -From $($emailConfig.username) -Subject '[DRILL] $vmName step $step' -ForegroundColor Yellow
 }
