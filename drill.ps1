@@ -99,10 +99,10 @@ if ($Parallel -and $vmList.Count -gt 1) {
     $stepCmd = @("",
         "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction PrimaryToRecovery -PerformSourceSideAction",
         "Start-AzRecoveryServicesAsrCommitFailoverJob",
-        "Start-AzRecoveryServicesAsrReprotectJob",
+        "Start-AzRecoveryServicesAsrReverseReplicationJob",
         "Start-AzRecoveryServicesAsrUnplannedFailoverJob -Direction RecoveryToPrimary -PerformSourceSideAction",
         "Start-AzRecoveryServicesAsrCommitFailoverJob",
-        "Start-AzRecoveryServicesAsrReprotectJob")[$step]
+        "Start-AzRecoveryServicesAsrReverseReplicationJob")[$step]
 
     $executionPlan = @()
 
@@ -233,11 +233,11 @@ switch (`$step) {
     }
     3 {
         if (`$WhatIf) {
-            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReverseReplicationJob"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem `$protectedItem
-            Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
+            `$job = Start-AzRecoveryServicesAsrReverseReplicationJob -ReplicationProtectedItem `$protectedItem
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrReverseReplicationJob"
             Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Reprotect completed"
         }
@@ -266,11 +266,11 @@ switch (`$step) {
     }
     6 {
         if (`$WhatIf) {
-            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReprotectJob"
+            Write-Log "[WHATIF] Start-AzRecoveryServicesAsrReverseReplicationJob"
             Start-Sleep -Milliseconds 500
         } else {
-            `$job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem `$protectedItem
-            Write-Log "[RUN] Start-AzRecoveryServicesAsrReprotectJob"
+            `$job = Start-AzRecoveryServicesAsrReverseReplicationJob -ReplicationProtectedItem `$protectedItem
+            Write-Log "[RUN] Start-AzRecoveryServicesAsrReverseReplicationJob"
             Wait-AsrJob -Job `$job -ErrorAction Stop | Out-Null
             Write-Log "[DONE] Reprotect restore completed"
         }
@@ -448,10 +448,10 @@ foreach ($targetVm in $vmList) {
         }
         3 {
             if ($WhatIf) {
-                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Yellow
+                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReverseReplicationJob" -ForegroundColor Yellow
             } else {
-                $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
-                Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
+                $job = Start-AzRecoveryServicesAsrReverseReplicationJob -ReplicationProtectedItem $protectedItem
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrReverseReplicationJob" -ForegroundColor Cyan
                 Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Reprotect completed" -ForegroundColor Green
             }
@@ -480,10 +480,10 @@ foreach ($targetVm in $vmList) {
         }
         6 {
             if ($WhatIf) {
-                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Yellow
+                Write-Host "[WHATIF] : Start-AzRecoveryServicesAsrReverseReplicationJob" -ForegroundColor Yellow
             } else {
-                $job = Start-AzRecoveryServicesAsrReprotectJob -ReplicationProtectedItem $protectedItem
-                Write-Host "[RUN] : Start-AzRecoveryServicesAsrReprotectJob" -ForegroundColor Cyan
+                $job = Start-AzRecoveryServicesAsrReverseReplicationJob -ReplicationProtectedItem $protectedItem
+                Write-Host "[RUN] : Start-AzRecoveryServicesAsrReverseReplicationJob" -ForegroundColor Cyan
                 Wait-AsrJob -Job $job -ErrorAction Stop | Out-Null
                 Write-Host "[DONE] : Reprotect restore completed" -ForegroundColor Green
             }
